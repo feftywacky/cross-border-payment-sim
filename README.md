@@ -1,4 +1,4 @@
-# Stablecoin Cross-Border Payment Simulator
+# Stablecoin Cross-Border Payment Simulator (CSI4900)
 
 Research web app answering: **under what transaction sizes and market conditions can a native-USDC route deliver
 more recipient money and/or faster usable settlement than a conventional cross-border payment?**
