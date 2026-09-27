@@ -1,0 +1,2823 @@
+{
+ "components": {
+  "schemas": {
+   "AdapterStatus": {
+    "properties": {
+     "credentials_configured": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Credentials Configured"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     },
+     "fetched_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fetched At"
+     },
+     "fresh": {
+      "title": "Fresh",
+      "type": "boolean"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "observed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observed At"
+     },
+     "provenance_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Provenance Url"
+     },
+     "source_id": {
+      "title": "Source Id",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "live_api",
+       "provider_estimate",
+       "published_tariff",
+       "historical",
+       "user_assumption",
+       "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source_id",
+     "kind",
+     "status",
+     "observed_at",
+     "fetched_at",
+     "expires_at",
+     "fresh",
+     "error",
+     "provenance_url"
+    ],
+    "title": "AdapterStatus",
+    "type": "object"
+   },
+   "AmountRange": {
+    "properties": {
+     "max": {
+      "title": "Max",
+      "type": "string"
+     },
+     "min": {
+      "title": "Min",
+      "type": "string"
+     },
+     "scale": {
+      "default": "log",
+      "enum": [
+       "log",
+       "linear"
+      ],
+      "title": "Scale",
+      "type": "string"
+     },
+     "steps": {
+      "default": 24,
+      "maximum": 40.0,
+      "minimum": 2.0,
+      "title": "Steps",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "min",
+     "max"
+    ],
+    "title": "AmountRange",
+    "type": "object"
+   },
+   "CatalogOut": {
+    "properties": {
+     "corridors": {
+      "items": {
+       "$ref": "#/components/schemas/CorridorOut"
+      },
+      "title": "Corridors",
+      "type": "array"
+     },
+     "countries": {
+      "items": {
+       "$ref": "#/components/schemas/CountryOut"
+      },
+      "title": "Countries",
+      "type": "array"
+     },
+     "currencies": {
+      "items": {
+       "$ref": "#/components/schemas/CurrencyOut"
+      },
+      "title": "Currencies",
+      "type": "array"
+     },
+     "default_corridor": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Default Corridor",
+      "type": "object"
+     },
+     "networks": {
+      "items": {
+       "$ref": "#/components/schemas/NetworkOut"
+      },
+      "title": "Networks",
+      "type": "array"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "objectives": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Objectives",
+      "type": "array"
+     },
+     "tariffs": {
+      "items": {
+       "$ref": "#/components/schemas/TariffOut"
+      },
+      "title": "Tariffs",
+      "type": "array"
+     },
+     "venues": {
+      "items": {
+       "$ref": "#/components/schemas/VenueOut"
+      },
+      "title": "Venues",
+      "type": "array"
+     },
+     "version": {
+      "title": "Version",
+      "type": "string"
+     }
+    },
+    "required": [
+     "version",
+     "currencies",
+     "countries",
+     "venues",
+     "networks",
+     "corridors",
+     "tariffs",
+     "objectives",
+     "default_corridor",
+     "notes"
+    ],
+    "title": "CatalogOut",
+    "type": "object"
+   },
+   "ComparisonRequest": {
+    "properties": {
+     "deadline_minutes": {
+      "anyOf": [
+       {
+        "maximum": 43200.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deadline Minutes"
+     },
+     "destination_country": {
+      "maxLength": 2,
+      "minLength": 2,
+      "title": "Destination Country",
+      "type": "string"
+     },
+     "destination_currency": {
+      "maxLength": 3,
+      "minLength": 3,
+      "title": "Destination Currency",
+      "type": "string"
+     },
+     "funding_method": {
+      "default": "any_bank",
+      "title": "Funding Method",
+      "type": "string"
+     },
+     "mode": {
+      "const": "current",
+      "default": "current",
+      "title": "Mode",
+      "type": "string"
+     },
+     "objective": {
+      "default": "MOST_RECEIVED",
+      "enum": [
+       "MOST_RECEIVED",
+       "FASTEST",
+       "WITHIN_DEADLINE"
+      ],
+      "title": "Objective",
+      "type": "string"
+     },
+     "overrides": {
+      "$ref": "#/components/schemas/Overrides"
+     },
+     "payout_method": {
+      "default": "any_bank",
+      "title": "Payout Method",
+      "type": "string"
+     },
+     "send_amount": {
+      "title": "Send Amount",
+      "type": "string"
+     },
+     "source_country": {
+      "maxLength": 2,
+      "minLength": 2,
+      "title": "Source Country",
+      "type": "string"
+     },
+     "source_currency": {
+      "maxLength": 3,
+      "minLength": 3,
+      "title": "Source Currency",
+      "type": "string"
+     },
+     "start_time": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "When the sender starts funding (defaults to now)",
+      "title": "Start Time"
+     }
+    },
+    "required": [
+     "source_country",
+     "source_currency",
+     "destination_country",
+     "destination_currency",
+     "send_amount"
+    ],
+    "title": "ComparisonRequest",
+    "type": "object"
+   },
+   "ComparisonResponse": {
+    "properties": {
+     "catalog_version": {
+      "title": "Catalog Version",
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "disclaimer": {
+      "title": "Disclaimer",
+      "type": "string"
+     },
+     "excluded": {
+      "items": {
+       "$ref": "#/components/schemas/RouteResult"
+      },
+      "title": "Excluded",
+      "type": "array"
+     },
+     "fastest_route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fastest Route Id"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "is_simulation_override": {
+      "title": "Is Simulation Override",
+      "type": "boolean"
+     },
+     "model_version": {
+      "title": "Model Version",
+      "type": "string"
+     },
+     "most_received_route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Most Received Route Id"
+     },
+     "pareto_route_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Pareto Route Ids",
+      "type": "array"
+     },
+     "recommendation_grade": {
+      "anyOf": [
+       {
+        "enum": [
+         "current",
+         "research"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recommendation Grade"
+     },
+     "recommendation_reason": {
+      "title": "Recommendation Reason",
+      "type": "string"
+     },
+     "recommended_route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recommended Route Id"
+     },
+     "reference_fx": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ReferenceFx"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "request": {
+      "$ref": "#/components/schemas/ComparisonRequest"
+     },
+     "routes": {
+      "items": {
+       "$ref": "#/components/schemas/RouteResult"
+      },
+      "title": "Routes",
+      "type": "array"
+     },
+     "snapshot": {
+      "$ref": "#/components/schemas/SnapshotMeta"
+     },
+     "source_errors": {
+      "items": {
+       "$ref": "#/components/schemas/SourceError"
+      },
+      "title": "Source Errors",
+      "type": "array"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "model_version",
+     "catalog_version",
+     "request",
+     "snapshot",
+     "reference_fx",
+     "routes",
+     "excluded",
+     "recommended_route_id",
+     "recommendation_reason",
+     "recommendation_grade",
+     "most_received_route_id",
+     "fastest_route_id",
+     "pareto_route_ids",
+     "is_simulation_override",
+     "source_errors",
+     "warnings",
+     "disclaimer"
+    ],
+    "title": "ComparisonResponse",
+    "type": "object"
+   },
+   "CorridorOut": {
+    "properties": {
+     "conventional": {
+      "title": "Conventional",
+      "type": "boolean"
+     },
+     "destination_country": {
+      "title": "Destination Country",
+      "type": "string"
+     },
+     "explanation": {
+      "title": "Explanation",
+      "type": "string"
+     },
+     "source_country": {
+      "title": "Source Country",
+      "type": "string"
+     },
+     "usdc": {
+      "title": "Usdc",
+      "type": "boolean"
+     },
+     "usdc_venue_pairs": {
+      "title": "Usdc Venue Pairs",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "source_country",
+     "destination_country",
+     "conventional",
+     "usdc",
+     "usdc_venue_pairs",
+     "explanation"
+    ],
+    "title": "CorridorOut",
+    "type": "object"
+   },
+   "CountryOut": {
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "currency": {
+      "title": "Currency",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "rails": {
+      "items": {
+       "$ref": "#/components/schemas/RailOut"
+      },
+      "title": "Rails",
+      "type": "array"
+     },
+     "region": {
+      "title": "Region",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "name",
+     "currency",
+     "region",
+     "rails"
+    ],
+    "title": "CountryOut",
+    "type": "object"
+   },
+   "Crossover": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "between": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Between",
+      "type": "array"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "metric": {
+      "enum": [
+       "cost",
+       "time"
+      ],
+      "title": "Metric",
+      "type": "string"
+     }
+    },
+    "required": [
+     "metric",
+     "amount",
+     "between",
+     "description"
+    ],
+    "title": "Crossover",
+    "type": "object"
+   },
+   "CurrencyOut": {
+    "properties": {
+     "amount_default": {
+      "title": "Amount Default",
+      "type": "string"
+     },
+     "amount_max": {
+      "title": "Amount Max",
+      "type": "string"
+     },
+     "amount_min": {
+      "title": "Amount Min",
+      "type": "string"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "dp": {
+      "title": "Dp",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "name",
+     "dp",
+     "amount_min",
+     "amount_max",
+     "amount_default"
+    ],
+    "title": "CurrencyOut",
+    "type": "object"
+   },
+   "Duration": {
+    "properties": {
+     "known": {
+      "title": "Known",
+      "type": "boolean"
+     },
+     "max": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max"
+     },
+     "min": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Min"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "typical": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Typical"
+     },
+     "unit": {
+      "const": "minutes",
+      "default": "minutes",
+      "title": "Unit",
+      "type": "string"
+     }
+    },
+    "required": [
+     "known"
+    ],
+    "title": "Duration",
+    "type": "object"
+   },
+   "FeeItem": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "amount_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Source-currency equivalent at the reference rate",
+      "title": "Amount Source"
+     },
+     "assumption": {
+      "default": false,
+      "title": "Assumption",
+      "type": "boolean"
+     },
+     "category": {
+      "enum": [
+       "funding",
+       "trading",
+       "conversion",
+       "withdrawal",
+       "network",
+       "deposit",
+       "payout",
+       "provider",
+       "intermediary",
+       "receiving",
+       "fx_spread",
+       "implied_spread_impact"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
+     },
+     "source_status": {
+      "enum": [
+       "live_api",
+       "provider_estimate",
+       "published_tariff",
+       "historical",
+       "user_assumption",
+       "unavailable"
+      ],
+      "title": "Source Status",
+      "type": "string"
+     },
+     "unit": {
+      "title": "Unit",
+      "type": "string"
+     }
+    },
+    "required": [
+     "category",
+     "label",
+     "amount",
+     "unit",
+     "source_status"
+    ],
+    "title": "FeeItem",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "HeatmapCell": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "axis_value": {
+      "title": "Axis Value",
+      "type": "string"
+     },
+     "best_conventional_route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Best Conventional Route Id"
+     },
+     "best_usdc_route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Best Usdc Route Id"
+     },
+     "classification": {
+      "enum": [
+       "cheaper",
+       "faster",
+       "both",
+       "neither",
+       "unavailable"
+      ],
+      "title": "Classification",
+      "type": "string"
+     },
+     "cost_advantage_pct": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost Advantage Pct"
+     },
+     "time_advantage_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Time Advantage Minutes"
+     }
+    },
+    "required": [
+     "amount",
+     "axis_value",
+     "classification",
+     "cost_advantage_pct",
+     "time_advantage_minutes",
+     "best_usdc_route_id",
+     "best_conventional_route_id"
+    ],
+    "title": "HeatmapCell",
+    "type": "object"
+   },
+   "LegResult": {
+    "properties": {
+     "amount_in": {
+      "title": "Amount In",
+      "type": "string"
+     },
+     "amount_out": {
+      "title": "Amount Out",
+      "type": "string"
+     },
+     "assumptions": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+     },
+     "detail": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Detail",
+      "type": "object"
+     },
+     "duration": {
+      "$ref": "#/components/schemas/Duration"
+     },
+     "fee": {
+      "title": "Fee",
+      "type": "string"
+     },
+     "fee_unit": {
+      "title": "Fee Unit",
+      "type": "string"
+     },
+     "index": {
+      "title": "Index",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "observed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observed At"
+     },
+     "provider": {
+      "title": "Provider",
+      "type": "string"
+     },
+     "schedule": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Schedule"
+     },
+     "source_ids": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Source Ids",
+      "type": "array"
+     },
+     "source_status": {
+      "enum": [
+       "live_api",
+       "provider_estimate",
+       "published_tariff",
+       "historical",
+       "user_assumption",
+       "unavailable"
+      ],
+      "title": "Source Status",
+      "type": "string"
+     },
+     "unit_in": {
+      "title": "Unit In",
+      "type": "string"
+     },
+     "unit_out": {
+      "title": "Unit Out",
+      "type": "string"
+     }
+    },
+    "required": [
+     "index",
+     "kind",
+     "label",
+     "provider",
+     "amount_in",
+     "unit_in",
+     "amount_out",
+     "unit_out",
+     "fee",
+     "fee_unit",
+     "duration",
+     "source_status"
+    ],
+    "title": "LegResult",
+    "type": "object"
+   },
+   "NetworkOut": {
+    "properties": {
+     "docs_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Docs Url"
+     },
+     "family": {
+      "title": "Family",
+      "type": "string"
+     },
+     "gas_token": {
+      "title": "Gas Token",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "l2": {
+      "title": "L2",
+      "type": "boolean"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "native_usdc": {
+      "title": "Native Usdc",
+      "type": "boolean"
+     },
+     "note": {
+      "title": "Note",
+      "type": "string"
+     },
+     "usdc_contract": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Usdc Contract"
+     },
+     "venues": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Venues",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "family",
+     "native_usdc",
+     "note",
+     "usdc_contract",
+     "gas_token",
+     "l2",
+     "venues",
+     "docs_url"
+    ],
+    "title": "NetworkOut",
+    "type": "object"
+   },
+   "Observation": {
+    "properties": {
+     "data": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Data"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     },
+     "fetched_at": {
+      "format": "date-time",
+      "title": "Fetched At",
+      "type": "string"
+     },
+     "methodology_version": {
+      "title": "Methodology Version",
+      "type": "string"
+     },
+     "observed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observed At"
+     },
+     "provenance_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Provenance Url"
+     },
+     "scope": {
+      "title": "Scope",
+      "type": "string"
+     },
+     "source_id": {
+      "title": "Source Id",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "live_api",
+       "provider_estimate",
+       "published_tariff",
+       "historical",
+       "user_assumption",
+       "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "source_id",
+     "fetched_at",
+     "status",
+     "scope",
+     "methodology_version"
+    ],
+    "title": "Observation",
+    "type": "object"
+   },
+   "Overrides": {
+    "description": "Counterfactual market assumptions. Any non-default value marks results as simulations.",
+    "properties": {
+     "bank_fx_spread_bps": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Override the bank-wire FX margin assumption",
+      "title": "Bank Fx Spread Bps"
+     },
+     "depth_multiplier": {
+      "default": "1",
+      "title": "Depth Multiplier",
+      "type": "string"
+     },
+     "funding_delay_hours": {
+      "default": "0",
+      "title": "Funding Delay Hours",
+      "type": "string"
+     },
+     "max_price_impact_bps": {
+      "default": "100",
+      "description": "Reject book fills that move price more than this",
+      "title": "Max Price Impact Bps",
+      "type": "string"
+     },
+     "network_fee_multiplier": {
+      "default": "1",
+      "title": "Network Fee Multiplier",
+      "type": "string"
+     },
+     "payout_delay_hours": {
+      "default": "0",
+      "title": "Payout Delay Hours",
+      "type": "string"
+     },
+     "provider_fee_multiplier": {
+      "default": "1",
+      "title": "Provider Fee Multiplier",
+      "type": "string"
+     },
+     "spread_bps": {
+      "default": "0",
+      "description": "Extra FX spread (bps) applied to every conversion/book",
+      "title": "Spread Bps",
+      "type": "string"
+     },
+     "trading_fee_override_pct": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Override every venue's taker fee (percent)",
+      "title": "Trading Fee Override Pct"
+     }
+    },
+    "title": "Overrides",
+    "type": "object"
+   },
+   "RailOut": {
+    "properties": {
+     "currency": {
+      "title": "Currency",
+      "type": "string"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "schedule": {
+      "title": "Schedule",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "currency",
+     "schedule",
+     "description"
+    ],
+    "title": "RailOut",
+    "type": "object"
+   },
+   "ReferenceFx": {
+    "properties": {
+     "base": {
+      "title": "Base",
+      "type": "string"
+     },
+     "cross_check": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cross Check"
+     },
+     "derivation": {
+      "title": "Derivation",
+      "type": "string"
+     },
+     "observed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Observed At"
+     },
+     "quote": {
+      "title": "Quote",
+      "type": "string"
+     },
+     "rate": {
+      "title": "Rate",
+      "type": "string"
+     },
+     "source_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Source Ids",
+      "type": "array"
+     },
+     "status": {
+      "enum": [
+       "live_api",
+       "provider_estimate",
+       "published_tariff",
+       "historical",
+       "user_assumption",
+       "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "unit": {
+      "title": "Unit",
+      "type": "string"
+     }
+    },
+    "required": [
+     "rate",
+     "unit",
+     "base",
+     "quote",
+     "observed_at",
+     "source_ids",
+     "derivation",
+     "status"
+    ],
+    "title": "ReferenceFx",
+    "type": "object"
+   },
+   "RouteResult": {
+    "properties": {
+     "all_in_cost_pct": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "All In Cost Pct"
+     },
+     "destination_venue": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Destination Venue"
+     },
+     "duration": {
+      "$ref": "#/components/schemas/Duration"
+     },
+     "effective_rate": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effective Rate"
+     },
+     "eligible": {
+      "title": "Eligible",
+      "type": "boolean"
+     },
+     "estimated_arrival": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Estimated Arrival"
+     },
+     "exclusion_codes": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Exclusion Codes",
+      "type": "array"
+     },
+     "exclusion_reasons": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Exclusion Reasons",
+      "type": "array"
+     },
+     "fee_breakdown": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/FeeItem"
+      },
+      "title": "Fee Breakdown",
+      "type": "array"
+     },
+     "funding_method": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Funding Method"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "input_quality": {
+      "default": "assumed",
+      "enum": [
+       "live",
+       "mixed",
+       "assumed"
+      ],
+      "title": "Input Quality",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "legs": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/LegResult"
+      },
+      "title": "Legs",
+      "type": "array"
+     },
+     "network": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Network"
+     },
+     "payout_method": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payout Method"
+     },
+     "prerequisites": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Prerequisites",
+      "type": "array"
+     },
+     "provider_steps": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Provider Steps",
+      "type": "array"
+     },
+     "recipient_amount": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recipient Amount"
+     },
+     "recipient_currency": {
+      "title": "Recipient Currency",
+      "type": "string"
+     },
+     "recommendation_grade": {
+      "default": "research",
+      "enum": [
+       "current",
+       "research"
+      ],
+      "title": "Recommendation Grade",
+      "type": "string"
+     },
+     "risks": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Risks",
+      "type": "array"
+     },
+     "source_ids": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Source Ids",
+      "type": "array"
+     },
+     "source_venue": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Venue"
+     },
+     "spread_bps": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Spread Bps"
+     },
+     "total_cost_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total Cost Source"
+     },
+     "type": {
+      "enum": [
+       "conventional_provider",
+       "bank_wire",
+       "usdc"
+      ],
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "type",
+     "label",
+     "provider_steps",
+     "eligible",
+     "recipient_currency",
+     "duration"
+    ],
+    "title": "RouteResult",
+    "type": "object"
+   },
+   "ScenarioCreate": {
+    "properties": {
+     "comparison_id": {
+      "title": "Comparison Id",
+      "type": "string"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "sensitivity_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sensitivity Id"
+     }
+    },
+    "required": [
+     "comparison_id"
+    ],
+    "title": "ScenarioCreate",
+    "type": "object"
+   },
+   "ScenarioOut": {
+    "properties": {
+     "comparison": {
+      "$ref": "#/components/schemas/ComparisonResponse"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "replay_note": {
+      "title": "Replay Note",
+      "type": "string"
+     },
+     "sensitivity": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/SensitivityResponse"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "share_path": {
+      "title": "Share Path",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "label",
+     "share_path",
+     "comparison",
+     "sensitivity",
+     "replay_note"
+    ],
+    "title": "ScenarioOut",
+    "type": "object"
+   },
+   "SensitivityRequest": {
+    "properties": {
+     "amount_range": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AmountRange"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "amounts": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "maxItems": 40,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Amounts"
+     },
+     "baseline": {
+      "$ref": "#/components/schemas/ComparisonRequest"
+     },
+     "heatmap_amounts": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "maxItems": 10,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Heatmap Amounts"
+     },
+     "heatmap_axis": {
+      "anyOf": [
+       {
+        "enum": [
+         "network_fee_multiplier",
+         "spread_bps",
+         "depth_multiplier",
+         "payout_delay_hours",
+         "provider_fee_multiplier"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": "network_fee_multiplier",
+      "title": "Heatmap Axis"
+     },
+     "heatmap_values": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "maxItems": 10,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Heatmap Values"
+     }
+    },
+    "required": [
+     "baseline"
+    ],
+    "title": "SensitivityRequest",
+    "type": "object"
+   },
+   "SensitivityResponse": {
+    "properties": {
+     "amounts": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Amounts",
+      "type": "array"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "crossovers": {
+      "items": {
+       "$ref": "#/components/schemas/Crossover"
+      },
+      "title": "Crossovers",
+      "type": "array"
+     },
+     "disclaimer": {
+      "title": "Disclaimer",
+      "type": "string"
+     },
+     "heatmap": {
+      "items": {
+       "$ref": "#/components/schemas/HeatmapCell"
+      },
+      "title": "Heatmap",
+      "type": "array"
+     },
+     "heatmap_amounts": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Heatmap Amounts",
+      "type": "array"
+     },
+     "heatmap_axis": {
+      "anyOf": [
+       {
+        "enum": [
+         "network_fee_multiplier",
+         "spread_bps",
+         "depth_multiplier",
+         "payout_delay_hours",
+         "provider_fee_multiplier"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Heatmap Axis"
+     },
+     "heatmap_values": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Heatmap Values",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "is_simulation": {
+      "title": "Is Simulation",
+      "type": "boolean"
+     },
+     "model_version": {
+      "title": "Model Version",
+      "type": "string"
+     },
+     "no_crossover_note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "No Crossover Note"
+     },
+     "points_computed": {
+      "title": "Points Computed",
+      "type": "integer"
+     },
+     "request": {
+      "$ref": "#/components/schemas/SensitivityRequest"
+     },
+     "series": {
+      "items": {
+       "$ref": "#/components/schemas/Series"
+      },
+      "title": "Series",
+      "type": "array"
+     },
+     "snapshot": {
+      "$ref": "#/components/schemas/SnapshotMeta"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "model_version",
+     "request",
+     "snapshot",
+     "amounts",
+     "series",
+     "crossovers",
+     "no_crossover_note",
+     "heatmap_axis",
+     "heatmap_values",
+     "heatmap_amounts",
+     "heatmap",
+     "points_computed",
+     "is_simulation",
+     "disclaimer"
+    ],
+    "title": "SensitivityResponse",
+    "type": "object"
+   },
+   "Series": {
+    "properties": {
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "points": {
+      "items": {
+       "$ref": "#/components/schemas/SeriesPoint"
+      },
+      "title": "Points",
+      "type": "array"
+     }
+    },
+    "required": [
+     "key",
+     "label",
+     "points"
+    ],
+    "title": "Series",
+    "type": "object"
+   },
+   "SeriesPoint": {
+    "properties": {
+     "all_in_cost_pct": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "All In Cost Pct"
+     },
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "eligible": {
+      "title": "Eligible",
+      "type": "boolean"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "recipient_amount": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recipient Amount"
+     },
+     "route_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Route Id"
+     },
+     "typical_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Typical Minutes"
+     }
+    },
+    "required": [
+     "amount",
+     "route_id",
+     "label",
+     "recipient_amount",
+     "all_in_cost_pct",
+     "typical_minutes",
+     "eligible"
+    ],
+    "title": "SeriesPoint",
+    "type": "object"
+   },
+   "SnapshotMeta": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "data_mode": {
+      "enum": [
+       "live",
+       "fixture"
+      ],
+      "title": "Data Mode",
+      "type": "string"
+     },
+     "errors": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/SourceError"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "observation_count": {
+      "title": "Observation Count",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "created_at",
+     "data_mode",
+     "observation_count"
+    ],
+    "title": "SnapshotMeta",
+    "type": "object"
+   },
+   "SourceError": {
+    "properties": {
+     "at": {
+      "format": "date-time",
+      "title": "At",
+      "type": "string"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "source_id": {
+      "title": "Source Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source_id",
+     "message",
+     "at"
+    ],
+    "title": "SourceError",
+    "type": "object"
+   },
+   "SourcesStatus": {
+    "properties": {
+     "adapters": {
+      "items": {
+       "$ref": "#/components/schemas/AdapterStatus"
+      },
+      "title": "Adapters",
+      "type": "array"
+     },
+     "catalog_version": {
+      "title": "Catalog Version",
+      "type": "string"
+     },
+     "data_mode": {
+      "title": "Data Mode",
+      "type": "string"
+     },
+     "errors": {
+      "items": {
+       "$ref": "#/components/schemas/SourceError"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+     },
+     "observations": {
+      "items": {
+       "$ref": "#/components/schemas/Observation"
+      },
+      "title": "Observations",
+      "type": "array"
+     },
+     "snapshot_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Snapshot Id"
+     },
+     "tariffs_assumed": {
+      "title": "Tariffs Assumed",
+      "type": "integer"
+     },
+     "tariffs_reviewed": {
+      "title": "Tariffs Reviewed",
+      "type": "integer"
+     },
+     "tariffs_total": {
+      "title": "Tariffs Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "generated_at",
+     "data_mode",
+     "snapshot_id",
+     "adapters",
+     "errors",
+     "tariffs_total",
+     "tariffs_reviewed",
+     "tariffs_assumed",
+     "catalog_version",
+     "observations"
+    ],
+    "title": "SourcesStatus",
+    "type": "object"
+   },
+   "TariffOut": {
+    "properties": {
+     "basis": {
+      "title": "Basis",
+      "type": "string"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "effective_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effective Date"
+     },
+     "fixed": {
+      "title": "Fixed",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "pct": {
+      "title": "Pct",
+      "type": "string"
+     },
+     "provider": {
+      "title": "Provider",
+      "type": "string"
+     },
+     "reviewed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reviewed At"
+     },
+     "source_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Url"
+     },
+     "unit": {
+      "title": "Unit",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "provider",
+     "description",
+     "unit",
+     "fixed",
+     "pct",
+     "basis",
+     "source_url",
+     "effective_date",
+     "reviewed_at"
+    ],
+    "title": "TariffOut",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "VenueCountryOut": {
+    "properties": {
+     "country": {
+      "title": "Country",
+      "type": "string"
+     },
+     "note": {
+      "title": "Note",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "country",
+     "status",
+     "note"
+    ],
+    "title": "VenueCountryOut",
+    "type": "object"
+   },
+   "VenueNetworkOut": {
+    "properties": {
+     "deposit": {
+      "title": "Deposit",
+      "type": "boolean"
+     },
+     "network": {
+      "title": "Network",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "withdraw": {
+      "title": "Withdraw",
+      "type": "boolean"
+     },
+     "withdraw_fee_usdc": {
+      "title": "Withdraw Fee Usdc",
+      "type": "string"
+     },
+     "withdraw_min": {
+      "title": "Withdraw Min",
+      "type": "string"
+     }
+    },
+    "required": [
+     "network",
+     "withdraw_fee_usdc",
+     "withdraw_min",
+     "status",
+     "deposit",
+     "withdraw"
+    ],
+    "title": "VenueNetworkOut",
+    "type": "object"
+   },
+   "VenueOut": {
+    "properties": {
+     "countries": {
+      "items": {
+       "$ref": "#/components/schemas/VenueCountryOut"
+      },
+      "title": "Countries",
+      "type": "array"
+     },
+     "fee_schedule_url": {
+      "title": "Fee Schedule Url",
+      "type": "string"
+     },
+     "fiat": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Fiat",
+      "type": "array"
+     },
+     "fiat_market": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Fiat Market",
+      "type": "object"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "networks": {
+      "items": {
+       "$ref": "#/components/schemas/VenueNetworkOut"
+      },
+      "title": "Networks",
+      "type": "array"
+     },
+     "participant_rules": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Participant Rules",
+      "type": "array"
+     },
+     "product_note": {
+      "title": "Product Note",
+      "type": "string"
+     },
+     "taker_fee_note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Taker Fee Note"
+     },
+     "taker_fee_pct": {
+      "title": "Taker Fee Pct",
+      "type": "string"
+     },
+     "taker_fee_reviewed": {
+      "title": "Taker Fee Reviewed",
+      "type": "boolean"
+     },
+     "url": {
+      "title": "Url",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "url",
+     "fee_schedule_url",
+     "taker_fee_pct",
+     "taker_fee_reviewed",
+     "taker_fee_note",
+     "fiat",
+     "fiat_market",
+     "countries",
+     "networks",
+     "participant_rules",
+     "product_note"
+    ],
+    "title": "VenueOut",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "description": "Read-only research simulator. Estimates only; never moves money or places orders.",
+  "title": "Stablecoin Cross-Border Payment Simulator API",
+  "version": "1.0.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/v1/analyses/sensitivity": {
+   "post": {
+    "operationId": "create_sensitivity_api_v1_analyses_sensitivity_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SensitivityRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SensitivityResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Sensitivity"
+   }
+  },
+  "/api/v1/catalog": {
+   "get": {
+    "operationId": "get_catalog_api_v1_catalog_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CatalogOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Catalog"
+   }
+  },
+  "/api/v1/comparisons": {
+   "post": {
+    "operationId": "create_comparison_api_v1_comparisons_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ComparisonRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComparisonResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Comparison"
+   }
+  },
+  "/api/v1/comparisons/{comparison_id}": {
+   "get": {
+    "operationId": "get_comparison_api_v1_comparisons__comparison_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "comparison_id",
+      "required": true,
+      "schema": {
+       "title": "Comparison Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComparisonResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Comparison"
+   }
+  },
+  "/api/v1/health": {
+   "get": {
+    "operationId": "health_api_v1_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Health Api V1 Health Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health"
+   }
+  },
+  "/api/v1/ready": {
+   "get": {
+    "operationId": "ready_api_v1_ready_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Ready Api V1 Ready Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Ready"
+   }
+  },
+  "/api/v1/scenarios": {
+   "post": {
+    "operationId": "create_scenario_api_v1_scenarios_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScenarioCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScenarioOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Scenario"
+   }
+  },
+  "/api/v1/scenarios/{scenario_id}": {
+   "get": {
+    "operationId": "get_scenario_api_v1_scenarios__scenario_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scenario_id",
+      "required": true,
+      "schema": {
+       "title": "Scenario Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScenarioOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Scenario"
+   }
+  },
+  "/api/v1/scenarios/{scenario_id}/export": {
+   "get": {
+    "operationId": "export_scenario_api_v1_scenarios__scenario_id__export_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scenario_id",
+      "required": true,
+      "schema": {
+       "title": "Scenario Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "pattern": "^(csv|json)$",
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Export Scenario"
+   }
+  },
+  "/api/v1/scenarios/{scenario_id}/replay": {
+   "get": {
+    "description": "Recompute the stored comparison from its retained snapshot (determinism check).",
+    "operationId": "replay_scenario_api_v1_scenarios__scenario_id__replay_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scenario_id",
+      "required": true,
+      "schema": {
+       "title": "Scenario Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComparisonResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Replay Scenario"
+   }
+  },
+  "/api/v1/sources/status": {
+   "get": {
+    "operationId": "sources_status_api_v1_sources_status_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "refresh",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Refresh",
+       "type": "boolean"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SourcesStatus"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Sources Status"
+   }
+  }
+ }
+}

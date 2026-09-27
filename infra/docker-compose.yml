@@ -1,0 +1,44 @@
+# Local stack: PostgreSQL + FastAPI + Next.js.   docker compose -f infra/docker-compose.yml up --build
+# Set DATA_MODE=fixture to run fully offline on recorded payloads.
+name: xborder-sim
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sim
+      POSTGRES_PASSWORD: sim
+      POSTGRES_DB: sim
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sim"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: ../services/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://sim:sim@db:5432/sim
+      DATA_MODE: ${DATA_MODE:-live}
+      CORS_ORIGINS: http://localhost:3000
+      WISE_API_TOKEN: ${WISE_API_TOKEN:-}
+      RPC_ETHEREUM: ${RPC_ETHEREUM:-}
+      RPC_BASE: ${RPC_BASE:-}
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/v1/ready')"]
+      interval: 5s
+      retries: 20
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args: { API_ORIGIN: "http://api:8000" }
+    depends_on:
+      api: { condition: service_healthy }
+    ports: ["3000:3000"]
+
+volumes:
+  dbdata:

@@ -1,0 +1,12 @@
+{
+  "name": "stablecoin-xborder-sim",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:web": "npm run dev -w web",
+    "build:web": "npm run build -w web",
+    "typecheck": "npm run typecheck -w web",
+    "contracts": "npm run generate -w @sim/contracts",
+    "contracts:check": "npm run check -w @sim/contracts"
+  }
+}

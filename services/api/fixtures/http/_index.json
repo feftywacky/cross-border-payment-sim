@@ -1,0 +1,233 @@
+{
+ "036372c5502efac77748f647": {
+  "name": "rpc-polygon",
+  "params": null,
+  "source_id": "network:polygon",
+  "url": "https://polygon-bor-rpc.publicnode.com"
+ },
+ "03669776c8bc75cc7154443f": {
+  "name": null,
+  "params": {
+   "count": "500",
+   "pair": "USDCCAD"
+  },
+  "source_id": "book:kraken",
+  "url": "https://api.kraken.com/0/public/Depth"
+ },
+ "03d986108ce7bd0828e36e53": {
+  "name": null,
+  "params": {
+   "instId": "USDC-EUR",
+   "sz": "400"
+  },
+  "source_id": "book:okx",
+  "url": "https://www.okx.com/api/v5/market/books"
+ },
+ "0c95d593d3f73ffa5dc42090": {
+  "name": "ecb-exr",
+  "params": {
+   "format": "jsondata",
+   "lastNObservations": "1"
+  },
+  "source_id": "ecb",
+  "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.CAD+GBP+JPY+USD.EUR.SP00.A"
+ },
+ "0d2905b5d89b8c967775f891": {
+  "name": null,
+  "params": {
+   "limit": "500",
+   "symbol": "USDCUSD"
+  },
+  "source_id": "book:binance",
+  "url": "https://api.binance.com/api/v3/depth"
+ },
+ "10f18fe41fb3ba98b02117e7": {
+  "name": null,
+  "params": null,
+  "source_id": "book:bitstamp",
+  "url": "https://www.bitstamp.net/api/v2/order_book/usdcusd/"
+ },
+ "170baf007fe82a6ed39c0209": {
+  "name": "kraken-ticker",
+  "params": {
+   "pair": "ALGOUSD,APTUSD,AVAXUSD,POLUSD,SOLUSD,SUIUSD,XETHZUSD,XXLMZUSD"
+  },
+  "source_id": "price:kraken",
+  "url": "https://api.kraken.com/0/public/Ticker"
+ },
+ "1b06416bb015e22ae7383629": {
+  "name": null,
+  "params": {
+   "level": "2"
+  },
+  "source_id": "book:coinbase",
+  "url": "https://api.exchange.coinbase.com/products/USDC-GBP/book"
+ },
+ "2ad6f3f1ffe5c64a3be5a237": {
+  "name": "rpc-solana",
+  "params": null,
+  "source_id": "network:solana",
+  "url": "https://api.mainnet-beta.solana.com"
+ },
+ "327ebc3cb06e38c6e1b6b74c": {
+  "name": "rpc-arbitrum",
+  "params": null,
+  "source_id": "network:arbitrum",
+  "url": "https://arb1.arbitrum.io/rpc"
+ },
+ "4011077a96837fcf5577c44c": {
+  "name": null,
+  "params": {
+   "level": "2"
+  },
+  "source_id": "book:coinbase",
+  "url": "https://api.exchange.coinbase.com/products/USDC-CAD/book"
+ },
+ "4aad10a3bf7e408af3a94bc2": {
+  "name": "coinbase-products",
+  "params": null,
+  "source_id": "book:coinbase",
+  "url": "https://api.exchange.coinbase.com/products"
+ },
+ "51b08ec4938c409a149701e7": {
+  "name": "rpc-base",
+  "params": null,
+  "source_id": "network:base",
+  "url": "https://mainnet.base.org"
+ },
+ "5cfa4eabeccd7caa83ff259b": {
+  "name": "horizon-fee-stats",
+  "params": null,
+  "source_id": "network:stellar",
+  "url": "https://horizon.stellar.org/fee_stats"
+ },
+ "5db15c2d9ac2f5ceeae46908": {
+  "name": "rpc-linea",
+  "params": null,
+  "source_id": "network:linea",
+  "url": "https://rpc.linea.build"
+ },
+ "68a1ab8cdcfc5f8d5cec7e0d": {
+  "name": "rpc-avalanche",
+  "params": null,
+  "source_id": "network:avalanche",
+  "url": "https://api.avax.network/ext/bc/C/rpc"
+ },
+ "6fb9b1c1c9c99043868faa61": {
+  "name": "binance-exchangeinfo",
+  "params": {
+   "permissions": "SPOT"
+  },
+  "source_id": "book:binance",
+  "url": "https://api.binance.com/api/v3/exchangeInfo"
+ },
+ "721f73453c424f11bb276b24": {
+  "name": "kraken-pairs",
+  "params": null,
+  "source_id": "book:kraken",
+  "url": "https://api.kraken.com/0/public/AssetPairs"
+ },
+ "76e4a0b22cda159a143af0e6": {
+  "name": "boc-valet",
+  "params": {
+   "recent": "1"
+  },
+  "source_id": "boc",
+  "url": "https://www.bankofcanada.ca/valet/observations/FXUSDCAD,FXEURCAD,FXGBPCAD,FXJPYCAD/json"
+ },
+ "86d13636ecdfa913c8702107": {
+  "name": null,
+  "params": {
+   "level": "2"
+  },
+  "source_id": "book:coinbase",
+  "url": "https://api.exchange.coinbase.com/products/USDC-EUR/book"
+ },
+ "90cb7e30c7b492de247cf807": {
+  "name": null,
+  "params": {
+   "category": "spot",
+   "limit": "200",
+   "symbol": "USDCEUR"
+  },
+  "source_id": "book:bybit",
+  "url": "https://api.bybit.com/v5/market/orderbook"
+ },
+ "917ca55243ebe090242d0f43": {
+  "name": null,
+  "params": {
+   "limit": "500",
+   "symbol": "EURUSDC"
+  },
+  "source_id": "book:binance",
+  "url": "https://api.binance.com/api/v3/depth"
+ },
+ "9fb075f96e763e6360b620a8": {
+  "name": "bitstamp-pairs",
+  "params": null,
+  "source_id": "book:bitstamp",
+  "url": "https://www.bitstamp.net/api/v2/trading-pairs-info/"
+ },
+ "a31c4e30c2b3467a477f9a4f": {
+  "name": null,
+  "params": null,
+  "source_id": "book:bitstamp",
+  "url": "https://www.bitstamp.net/api/v2/order_book/usdceur/"
+ },
+ "a8f63bf3442861fe47185f99": {
+  "name": null,
+  "params": {
+   "count": "500",
+   "pair": "USDCGBP"
+  },
+  "source_id": "book:kraken",
+  "url": "https://api.kraken.com/0/public/Depth"
+ },
+ "aec3cbecca261868c2c9b104": {
+  "name": null,
+  "params": {
+   "count": "500",
+   "pair": "USDCEUR"
+  },
+  "source_id": "book:kraken",
+  "url": "https://api.kraken.com/0/public/Depth"
+ },
+ "ca770884d30f11b242d53592": {
+  "name": "okx-instruments",
+  "params": {
+   "instType": "SPOT"
+  },
+  "source_id": "book:okx",
+  "url": "https://www.okx.com/api/v5/public/instruments"
+ },
+ "ca85ba6f420cb688cb97245d": {
+  "name": "rpc-optimism",
+  "params": null,
+  "source_id": "network:optimism",
+  "url": "https://mainnet.optimism.io"
+ },
+ "d2ec89ed1a3108ff30cc3095": {
+  "name": "bybit-instruments",
+  "params": {
+   "category": "spot",
+   "limit": "1000"
+  },
+  "source_id": "book:bybit",
+  "url": "https://api.bybit.com/v5/market/instruments-info"
+ },
+ "e17eebec95831e79182e6310": {
+  "name": "rpc-ethereum",
+  "params": null,
+  "source_id": "network:ethereum",
+  "url": "https://ethereum-rpc.publicnode.com"
+ },
+ "e491198915c1029d76c659b4": {
+  "name": null,
+  "params": {
+   "count": "500",
+   "pair": "USDCUSD"
+  },
+  "source_id": "book:kraken",
+  "url": "https://api.kraken.com/0/public/Depth"
+ }
+}
