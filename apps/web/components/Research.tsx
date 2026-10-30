@@ -1,33 +1,28 @@
 "use client";
 
 import type { SensitivityResponse } from "@sim/contracts";
-import { useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { minutes, money, pct } from "@/lib/format";
-import { Card, CardHeader, cn, Disclosure, Segmented } from "./ui";
+import { useState, type ReactNode } from "react";
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { minutes, money } from "@/lib/format";
+import { Card, CardHeader, cn, Segmented, Skeleton } from "./ui";
 
-// Validated categorical slots (dataviz reference palette), fixed per entity — never by rank.
-const SERIES_COLOR: Record<string, string> = {
-  best_usdc: "var(--viz-1)",
-  wise: "var(--viz-2)",
-  fastest_usdc: "var(--viz-3)",
-  bank_swift: "var(--viz-4)",
+/* One subject, one hue: USDC series take the data hue (solid = best, dashed = fastest); conventional
+   comparators are ink (Wise) and grey (bank wire). Legend swatches are drawn from the same styles. */
+const SERIES_STYLE: Record<string, { stroke: string; dash?: string }> = {
+  best_usdc: { stroke: "var(--accent)" },
+  fastest_usdc: { stroke: "var(--accent)", dash: "5 4" },
+  wise: { stroke: "var(--conv)" },
+  bank_swift: { stroke: "var(--conv-2)" },
 };
-const CLASS_STYLE: Record<string, { bg: string; label: string }> = {
-  cheaper: { bg: "var(--viz-1)", label: "USDC cheaper" },
-  faster: { bg: "var(--viz-2)", label: "USDC faster" },
-  both: { bg: "var(--viz-3)", label: "Both" },
-  neither: { bg: "var(--viz-neutral)", label: "Neither" },
-  unavailable: { bg: "transparent", label: "No comparison" },
+const styleOf = (k: string) => SERIES_STYLE[k] ?? { stroke: "var(--conv-2)" };
+
+/* Heatmap: each outcome has its own mark, so "faster only" reads apart from "cheaper only" without a second hue. */
+const CLASS_STYLE: Record<string, { cls: string; label: string }> = {
+  both: { cls: "bg-accent text-white", label: "USDC cheaper and faster" },
+  cheaper: { cls: "bg-accent-soft text-accent-ink", label: "USDC cheaper only" },
+  faster: { cls: "hatch text-accent-ink", label: "USDC faster only" },
+  neither: { cls: "bg-active text-muted", label: "Conventional wins" },
+  unavailable: { cls: "border border-dashed border-border-strong text-muted", label: "No comparison" },
 };
 
 export const AXIS_LABEL: Record<string, string> = {
@@ -42,9 +37,8 @@ function compact(n: number) {
   return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }
 
-export function ResearchCharts({ data, currency, controls }: { data: SensitivityResponse; currency: string; controls?: React.ReactNode }) {
-  const [view, setView] = useState<"chart" | "table">("chart");
-  const rows = data.amounts.map((a, i) => {
+function rowsOf(data: SensitivityResponse) {
+  return data.amounts.map((a, i) => {
     const row: Record<string, number | string | null> = { amount: Number(a) };
     for (const s of data.series) {
       const p = s.points[i];
@@ -54,130 +48,250 @@ export function ResearchCharts({ data, currency, controls }: { data: Sensitivity
     }
     return row;
   });
+}
+
+/** Round, even ticks from zero (or below it) to one step above the maximum. */
+function niceTicks(min: number, max: number) {
+  const span = Math.max(max - Math.min(0, min), 0.01);
+  const step = [0.1, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50].find((s) => span / s <= 5) ?? 100;
+  const lo = Math.min(0, Math.floor(min / step) * step);
+  const hi = (Math.floor(max / step) + 1) * step;
+  const ticks: number[] = [];
+  for (let t = lo; t <= hi + step / 2; t += step) ticks.push(Math.round(t * 1000) / 1000);
+  return ticks;
+}
+
+/** Scale the cost chart to the comparison that matters: a series more than three times costlier than the
+    next one (the bank wire at small amounts) runs off the top and is named in a caption instead. */
+function costScale(rows: Record<string, number | string | null>[], data: SensitivityResponse) {
+  const maxOf = (k: string) => Math.max(...rows.map((r) => (r[`${k}_cost`] as number | null) ?? -Infinity));
+  const minAll = Math.min(...data.series.flatMap((s) => rows.map((r) => (r[`${s.key}_cost`] as number | null) ?? Infinity)));
+  const maxima = data.series.map((s) => ({ s, m: maxOf(s.key) })).filter((x) => Number.isFinite(x.m)).sort((a, b) => b.m - a.m);
+  const capped = maxima.length > 1 && maxima[0].m > 3 * Math.max(maxima[1].m, 0.5) ? maxima[0] : null;
+  const top = capped ? maxima[1].m : (maxima[0]?.m ?? 1);
+  const ticks = niceTicks(Number.isFinite(minAll) ? minAll : 0, top);
+  return { ticks, capped: capped && capped.m > ticks[ticks.length - 1] ? capped : null };
+}
+
+const axis = { stroke: "var(--faint)", fontSize: 12, tickLine: false, axisLine: false } as const;
+
+export function SeriesLegend({ data }: { data: SensitivityResponse }) {
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+      {data.series.map((s) => {
+        const st = styleOf(s.key);
+        return (
+          <li key={s.key} className="inline-flex items-center gap-1.5">
+            <svg aria-hidden width="16" height="6">
+              <line x1="0" y1="3" x2="16" y2="3" stroke={st.stroke} strokeWidth="2" strokeDasharray={st.dash} />
+            </svg>
+            {s.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* ------------------------------------------------------------------ cost by amount (beside the answer) */
+
+export function CostPanel({
+  data,
+  currency,
+  amount,
+  loading,
+  error,
+}: {
+  data: SensitivityResponse | null;
+  currency: string;
+  amount: string;
+  loading: boolean;
+  error: string | null;
+}) {
+  const head = (
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div>
+        <h2 className="text-base font-semibold">All-in cost by amount</h2>
+        <p className="mt-1 text-[13px] text-muted">Percent lost against the ECB mid-rate. Every point re-prices every route.</p>
+      </div>
+      {loading && <span className="text-xs text-muted">Sweeping…</span>}
+    </div>
+  );
+  if (error && !data)
+    return (
+      <div>
+        {head}
+        <p className="mt-6 rounded-md border border-dashed border-border-strong px-3 py-2.5 text-[13px] text-muted">Couldn&apos;t run the amount sweep: {error}</p>
+      </div>
+    );
+  if (!data)
+    return (
+      <div aria-busy>
+        {head}
+        <Skeleton className="mt-4 h-4 w-72" />
+        <Skeleton className="mt-4 h-[260px] w-full" />
+        <Skeleton className="mt-4 h-10 w-full" />
+      </div>
+    );
+
+  const rows = rowsOf(data);
   const costX = data.crossovers.filter((c) => c.metric === "cost");
-  const timeX = data.crossovers.filter((c) => c.metric === "time");
-  const axis = { stroke: "var(--faint)", fontSize: 11, tickLine: false, axisLine: false } as const;
+  const { ticks, capped } = costScale(rows, data);
+  const a = Number(amount);
+  const inRange = a >= Number(data.amounts[0]) && a <= Number(data.amounts[data.amounts.length - 1]);
 
   return (
-    <div className="viz-root flex flex-col gap-6">
-      <div>
-        <div className="eyebrow">Break-even</div>
-        {data.crossovers.length === 0 ? (
-          <p className="mt-2 max-w-2xl text-sm text-muted">{data.no_crossover_note}</p>
-        ) : (
-          <ul className="mt-2 space-y-1.5">
-            {data.crossovers.map((c, i) => (
-              <li key={i} className="flex flex-wrap items-baseline gap-x-3 text-sm">
-                <span className="display text-2xl tabular">{money(c.amount, currency, { dp: 0 })}</span>
-                <span className="text-muted">
-                  <span className="text-text">{c.metric}</span> · {c.description}
-                </span>
-              </li>
+    <div className={cn("flex h-full flex-col", loading && "opacity-60 transition")}>
+      {head}
+      <div className="mt-3">
+        <SeriesLegend data={data} />
+      </div>
+      <figure className="mt-3 h-[260px]" aria-label="All-in cost by amount, log scale">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={rows} margin={{ top: 22, right: 12, bottom: 0, left: -8 }}>
+            <CartesianGrid stroke="var(--grid)" vertical={false} />
+            <XAxis dataKey="amount" type="number" scale="log" domain={["dataMin", "dataMax"]} tickFormatter={compact} {...axis} allowDataOverflow />
+            <YAxis {...axis} tickFormatter={(v) => `${v}%`} width={48} ticks={ticks} domain={[ticks[0], ticks[ticks.length - 1]]} allowDataOverflow />
+            <Tooltip cursor={{ stroke: "var(--border-strong)" }} content={<Tip rows={rows} metric="cost" currency={currency} series={data.series} />} />
+            <ReferenceLine y={0} stroke="var(--faint)" />
+            {costX.map((c, i) => (
+              <ReferenceLine key={i} x={Number(c.amount)} stroke="var(--faint)" strokeDasharray="3 3" />
             ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-          {data.series.map((s) => (
-            <span key={s.key} className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: SERIES_COLOR[s.key] }} />
-              {s.label}
-            </span>
-          ))}
-        </div>
-        <Segmented label="Chart or table" value={view} onChange={setView} options={[{ value: "chart", label: "Charts" }, { value: "table", label: "Table" }]} />
-      </div>
-
-      {view === "chart" ? (
-        <div className="grid gap-8 lg:grid-cols-2">
-          <ChartBox title="All-in cost" sub="% lost vs ECB reference, by amount (log)">
-            <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
-              <CartesianGrid stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="amount" type="number" scale="log" domain={["dataMin", "dataMax"]} tickFormatter={compact} {...axis} allowDataOverflow />
-              <YAxis {...axis} tickFormatter={(v) => `${v}%`} domain={[(min: number) => Math.min(0, Math.floor(min)), (max: number) => Math.min(Math.ceil(max), 15)]} allowDataOverflow />
-              <Tooltip cursor={{ stroke: "var(--border-strong)" }} content={<Tip rows={rows} metric="cost" currency={currency} series={data.series} />} />
-              {costX.map((c, i) => (
-                <ReferenceLine key={i} x={Number(c.amount)} stroke="var(--muted)" strokeDasharray="3 3" label={{ value: compact(Number(c.amount)), fontSize: 10, fill: "var(--muted)", position: "insideTopRight" }} />
-              ))}
-              {data.series.map((s) => (
-                <Line key={s.key} dataKey={`${s.key}_cost`} name={s.label} stroke={SERIES_COLOR[s.key]} strokeWidth={1.75} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false} />
-              ))}
-            </LineChart>
-          </ChartBox>
-          <ChartBox title="Typical time" sub="hours to recipient bank, by amount (log)">
-            <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
-              <CartesianGrid stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="amount" type="number" scale="log" domain={["dataMin", "dataMax"]} tickFormatter={compact} {...axis} />
-              <YAxis {...axis} tickFormatter={(v) => `${v}h`} />
-              <Tooltip cursor={{ stroke: "var(--border-strong)" }} content={<Tip rows={rows} metric="time" currency={currency} series={data.series} />} />
-              {timeX.map((c, i) => (
-                <ReferenceLine key={i} x={Number(c.amount)} stroke="var(--muted)" strokeDasharray="3 3" />
-              ))}
-              {data.series.map((s) => (
-                <Line key={s.key} dataKey={`${s.key}_time`} name={s.label} stroke={SERIES_COLOR[s.key]} strokeWidth={1.75} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false} type="stepAfter" />
-              ))}
-            </LineChart>
-          </ChartBox>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs tabular">
-            <thead className="text-left text-faint">
-              <tr className="border-b border-border">
-                <th className="py-2 pr-3 font-medium">Amount ({currency})</th>
-                {data.series.map((s) => (
-                  <th key={s.key} className="px-3 py-2 font-medium">{s.label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.amounts.map((a, i) => (
-                <tr key={a} className="border-b border-border last:border-0">
-                  <td className="py-1.5 pr-3">{Number(a).toLocaleString()}</td>
-                  {data.series.map((s) => {
-                    const p = s.points[i];
-                    return (
-                      <td key={s.key} className="px-3 py-1.5" title={p.label ?? ""}>
-                        {p.eligible ? `${pct(p.all_in_cost_pct, 3)} · ${minutes(p.typical_minutes)}` : <span className="text-faint">unavailable</span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            {inRange && (
+              <ReferenceLine x={a} stroke="var(--text)" label={{ value: `Your amount`, fontSize: 12, fill: "var(--text)", position: "top" }} />
+            )}
+            {data.series.map((s) => (
+              <Line key={s.key} dataKey={`${s.key}_cost`} name={s.label} stroke={styleOf(s.key).stroke} strokeDasharray={styleOf(s.key).dash} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </figure>
+      <p className="mt-1 text-right text-xs text-muted">Amount sent ({currency}), log scale</p>
+      {capped && (
+        <p className="mt-1 text-xs text-muted">
+          {capped.s.label} runs off the top: up to {capped.m.toFixed(1)}% at small amounts (see the table view below).
+        </p>
       )}
-
-      {(controls || (data.heatmap_axis && data.heatmap.length > 0)) && (
-        <Disclosure summary="Stress test — where does USDC still win?" className="border-t border-border pt-5">
-          {controls && <div className="mb-4">{controls}</div>}
-          {data.heatmap_axis && data.heatmap.length > 0 && <Heatmap data={data} currency={currency} />}
-        </Disclosure>
-      )}
-
-      <p className="text-[11px] text-faint">
-        Simulation on one snapshot · {data.points_computed} full re-pricings · <span className="font-mono">{data.snapshot.id}</span>
-      </p>
+      <Crossovers data={data} currency={currency} />
     </div>
   );
 }
 
-function ChartBox({ title, sub, children }: { title: string; sub: string; children: React.ReactElement }) {
+function Crossovers({ data, currency }: { data: SensitivityResponse; currency: string }) {
   return (
-    <figure>
-      <figcaption className="mb-3 flex items-baseline gap-2">
-        <span className="text-[13px] font-medium">{title}</span>
-        <span className="text-[11px] text-faint">{sub}</span>
-      </figcaption>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
+    <div className="mt-4 border-t border-rule pt-4">
+      <h3 className="text-sm font-semibold">Break-even amounts</h3>
+      {data.crossovers.length === 0 ? (
+        <p className="mt-1 text-[13px] text-muted">{data.no_crossover_note}</p>
+      ) : (
+        <ul className="mt-1">
+          {data.crossovers.map((c, i) => (
+            <li key={i} className="flex items-baseline gap-4 border-b border-rule py-2 text-[13px] last:border-0">
+              <span className="w-28 flex-none text-right text-sm font-medium tabular">{money(c.amount, currency, { dp: 0 })}</span>
+              <span className="text-muted">
+                <span className="text-text">{c.metric === "cost" ? "Cost" : "Time"}:</span> {c.description}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ time + stress (research card) */
+
+export function ResearchCharts({ data, currency, controls }: { data: SensitivityResponse; currency: string; controls?: ReactNode }) {
+  const [view, setView] = useState<"chart" | "table">("chart");
+  const rows = rowsOf(data);
+  const timeX = data.crossovers.filter((c) => c.metric === "time");
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Typical time to recipient bank</h3>
+            <p className="mt-0.5 text-[13px] text-muted">Hours, by amount sent ({currency}, log scale)</p>
+          </div>
+          <Segmented label="Chart or table" value={view} onChange={setView} options={[{ value: "chart", label: "Chart" }, { value: "table", label: "Table" }]} />
+        </div>
+        {view === "chart" ? (
+          <>
+            <div className="mt-3">
+              <SeriesLegend data={data} />
+            </div>
+            <figure className="mt-3 h-[240px]" aria-label="Typical time to recipient bank by amount">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: -8 }}>
+                  <CartesianGrid stroke="var(--grid)" vertical={false} />
+                  <XAxis dataKey="amount" type="number" scale="log" domain={["dataMin", "dataMax"]} tickFormatter={compact} {...axis} />
+                  <YAxis {...axis} width={48} tickFormatter={(v) => `${v} h`} />
+                  <Tooltip cursor={{ stroke: "var(--border-strong)" }} content={<Tip rows={rows} metric="time" currency={currency} series={data.series} />} />
+                  {timeX.map((c, i) => (
+                    <ReferenceLine key={i} x={Number(c.amount)} stroke="var(--faint)" strokeDasharray="3 3" />
+                  ))}
+                  {data.series.map((s) => (
+                    <Line key={s.key} dataKey={`${s.key}_time`} name={s.label} stroke={styleOf(s.key).stroke} strokeDasharray={styleOf(s.key).dash} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} isAnimationActive={false} type="stepAfter" />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </figure>
+          </>
+        ) : (
+          <div className="mt-3 max-h-[300px] overflow-auto">
+            <table className="w-full text-[13px] tabular">
+              <thead className="sticky top-0 bg-surface">
+                <tr className="border-b border-border text-xs text-muted">
+                  <th className="h-9 pr-3 text-right font-normal">Amount</th>
+                  {data.series.map((s) => (
+                    <th key={s.key} className="h-9 px-2 text-right font-normal">{s.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.amounts.map((a, i) => (
+                  <tr key={a} className="border-b border-rule last:border-0">
+                    <td className="py-1.5 pr-3 text-right">{Number(a).toLocaleString()}</td>
+                    {data.series.map((s) => {
+                      const p = s.points[i];
+                      return (
+                        <td key={s.key} className="px-2 py-1.5 text-right" title={p.label ?? ""}>
+                          {p.eligible ? (
+                            <>
+                              {Number(p.all_in_cost_pct).toFixed(3)}%<span className="block text-xs text-muted">{minutes(p.typical_minutes)}</span>
+                            </>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    </figure>
+
+      <div className="min-w-0">
+        <h3 className="text-sm font-semibold">Stress test: where does USDC still win?</h3>
+        <p className="mt-0.5 text-[13px] text-muted">
+          Best USDC route against best conventional route, with every route re-priced in each cell.
+        </p>
+        {controls && <div className="mt-4">{controls}</div>}
+        {data.heatmap_axis && data.heatmap.length > 0 ? (
+          <Heatmap data={data} currency={currency} />
+        ) : (
+          <p className="mt-4 rounded-md border border-dashed border-border-strong px-3 py-2.5 text-[13px] text-muted">No stress grid for this sweep.</p>
+        )}
+      </div>
+
+      <p className="text-xs text-muted xl:col-span-2">
+        Simulation on one snapshot · <span className="tabular">{data.points_computed}</span> full re-pricings · <span className="font-mono">{data.snapshot.id}</span>
+      </p>
+    </div>
   );
 }
 
@@ -195,16 +309,14 @@ function Tip({ active, label, rows, metric, currency, series }: TipProps) {
   const row = rows.find((r) => r.amount === label);
   if (!row) return null;
   return (
-    <div className="max-w-xs rounded-xl border border-border bg-surface p-3 text-[11px] shadow-soft">
-      <div className="mb-1 font-semibold tabular">{money(String(label), currency)}</div>
+    <div className="max-w-xs rounded-md border border-border bg-surface p-3 text-xs shadow-lg">
+      <div className="mb-1.5 text-[13px] font-semibold tabular">{money(String(label), currency)}</div>
       {series.map((s) => {
         const v = row[`${s.key}_${metric}`] as number | null;
         return (
-          <div key={s.key} className="mb-0.5">
-            <span className="mr-1 inline-block h-2 w-2 rounded-full" style={{ background: SERIES_COLOR[s.key] }} />
-            <span className="text-muted">{s.label}: </span>
-            <b className="tabular">{v == null ? "unavailable" : metric === "cost" ? `${v.toFixed(3)}%` : minutes(Math.round(v * 60))}</b>
-            {row[`${s.key}_label`] && <div className="truncate pl-3 text-muted">{String(row[`${s.key}_label`])}</div>}
+          <div key={s.key} className="mb-1 flex items-baseline justify-between gap-4">
+            <span className="text-muted">{s.label}</span>
+            <span className="font-medium tabular">{v == null ? "—" : metric === "cost" ? `${v.toFixed(3)}%` : minutes(Math.round(v * 60))}</span>
           </div>
         );
       })}
@@ -216,41 +328,37 @@ function Heatmap({ data, currency }: { data: SensitivityResponse; currency: stri
   const [hover, setHover] = useState<string | null>(null);
   const cell = (a: string, v: string) => data.heatmap.find((c) => c.amount === a && c.axis_value === v);
   const hovered = hover ? data.heatmap.find((c) => `${c.amount}|${c.axis_value}` === hover) : null;
+  const present = new Set(data.heatmap.map((c) => c.classification));
   return (
-    <figure>
-      <figcaption className="mb-2 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <div className="text-xs font-semibold">Where does the best USDC route beat the best conventional route?</div>
-          <div className="text-[11px] text-muted">
-            Rows: {AXIS_LABEL[data.heatmap_axis!]} · Columns: amount ({currency}) · each cell re-prices every route
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 text-[11px]">
-          {Object.entries(CLASS_STYLE).map(([k, s]) => (
-            <span key={k} className="inline-flex items-center gap-1">
-              <span className={cn("inline-block h-3 w-3 rounded-sm", k === "unavailable" && "border border-dashed border-muted")} style={{ background: s.bg }} />
+    <figure className="mt-4">
+      <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted">
+        {Object.entries(CLASS_STYLE)
+          .filter(([k]) => present.has(k as never))
+          .map(([k, s]) => (
+            <li key={k} className="inline-flex items-center gap-1.5">
+              <span aria-hidden className={cn("inline-block h-3 w-4 rounded-sm", s.cls)} />
               {s.label}
-            </span>
+            </li>
           ))}
-        </div>
-      </figcaption>
+      </ul>
       <div className="overflow-x-auto">
-        <table className="border-separate border-spacing-[2px] text-[11px] tabular" onMouseLeave={() => setHover(null)}>
+        <table className="border-separate border-spacing-[3px] text-xs tabular" onMouseLeave={() => setHover(null)}>
           <thead>
             <tr>
-              <th className="px-1 text-left font-medium text-muted">{AXIS_LABEL[data.heatmap_axis!]}</th>
+              <th className="pr-2 text-left font-normal text-muted">{AXIS_LABEL[data.heatmap_axis!]}</th>
               {data.heatmap_amounts.map((a) => (
-                <th key={a} className="px-1 font-medium text-muted">{compact(Number(a))}</th>
+                <th key={a} className="font-normal text-muted">{compact(Number(a))}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {data.heatmap_values.map((v) => (
               <tr key={v}>
-                <th className="px-1 text-left font-medium text-muted">{v}</th>
+                <th className="pr-2 text-left font-normal text-muted">{v}</th>
                 {data.heatmap_amounts.map((a) => {
                   const c = cell(a, v);
-                  const s = CLASS_STYLE[c?.classification ?? "unavailable"];
+                  const k = c?.classification ?? "unavailable";
+                  const s = CLASS_STYLE[k];
                   const key = `${a}|${v}`;
                   return (
                     <td key={a} className="p-0">
@@ -259,13 +367,12 @@ function Heatmap({ data, currency }: { data: SensitivityResponse; currency: stri
                         onFocus={() => setHover(key)}
                         aria-label={`${compact(Number(a))} ${currency}, ${AXIS_LABEL[data.heatmap_axis!]} ${v}: ${s.label}`}
                         className={cn(
-                          "flex h-8 w-14 items-center justify-center rounded-md text-[10px] font-medium transition",
-                          c?.classification === "unavailable" ? "border border-dashed border-border text-muted" : "text-[#0b0b0b]",
-                          hover === key && "ring-2 ring-[var(--text)]",
+                          "flex h-9 w-16 items-center justify-center rounded text-xs font-medium transition",
+                          s.cls,
+                          hover === key && "outline outline-2 outline-offset-1 outline-[var(--text)]",
                         )}
-                        style={{ background: s.bg }}
                       >
-                        {c?.classification === "unavailable" ? "—" : c?.cost_advantage_pct != null ? `${Number(c.cost_advantage_pct) >= 0 ? "+" : ""}${Number(c.cost_advantage_pct).toFixed(2)}` : ""}
+                        {k === "unavailable" ? "—" : c?.cost_advantage_pct != null ? `${Number(c.cost_advantage_pct) >= 0 ? "+" : ""}${Number(c.cost_advantage_pct).toFixed(2)}` : ""}
                       </button>
                     </td>
                   );
@@ -275,31 +382,31 @@ function Heatmap({ data, currency }: { data: SensitivityResponse; currency: stri
           </tbody>
         </table>
       </div>
-      <p className="mt-2 min-h-8 text-[11px] text-muted">
+      <figcaption className="mt-3 min-h-10 text-[13px] leading-5 text-muted">
         {hovered ? (
           <>
-            <b className="text-text">{money(hovered.amount, currency)}</b> at {AXIS_LABEL[data.heatmap_axis!]} {hovered.axis_value}:{" "}
+            <span className="font-medium text-text">{money(hovered.amount, currency)}</span> at {AXIS_LABEL[data.heatmap_axis!]} {hovered.axis_value}:{" "}
             {CLASS_STYLE[hovered.classification].label}. Cost advantage {hovered.cost_advantage_pct ?? "—"} pp; time advantage{" "}
             {hovered.time_advantage_minutes == null ? "unknown" : minutes(Math.abs(hovered.time_advantage_minutes)) + (hovered.time_advantage_minutes >= 0 ? " faster" : " slower")}.
-            <span className="block font-mono">{hovered.best_usdc_route_id} vs {hovered.best_conventional_route_id}</span>
           </>
         ) : (
-          "Cell text = all-in cost advantage of USDC in percentage points (positive = USDC cheaper). Hover or focus a cell for details."
+          "Cell figures are USDC's cost advantage in percentage points (positive means USDC is cheaper). Hover or focus a cell for details."
         )}
-      </p>
+      </figcaption>
     </figure>
   );
 }
 
-export function ResearchCard({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
+export function ResearchCard({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <Card>
+    <Card aria-labelledby="research-title">
       <CardHeader
+        id="research-title"
         title="When does USDC win?"
-        sub="Every route is fully re-priced at each amount and stress point — never a linear scaling of one quote."
+        sub="Time by amount, and how far the advantage survives congestion, thin books, wider spreads and delays."
         right={right}
       />
-      <div className="px-5 pb-5 pt-2">{children}</div>
+      <div className="px-5 pb-5 pt-1">{children}</div>
     </Card>
   );
 }

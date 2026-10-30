@@ -4,11 +4,13 @@ import type { Catalog, ComparisonRequest, ComparisonResponse, SensitivityRespons
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, exportUrl } from "@/lib/api";
+import { ago } from "@/lib/format";
 import { ComparisonForm, DEFAULT_OVERRIDES } from "./ComparisonForm";
-import { AXIS_LABEL, ResearchCard, ResearchCharts } from "./Research";
-import { RouteTable, StatusLine, Verdict } from "./Results";
+import { AXIS_LABEL, CostPanel, ResearchCard, ResearchCharts } from "./Research";
+import { Finding, RouteTable, StatusLine, Verdict } from "./Results";
 import { RouteDetail } from "./RouteDetail";
-import { Button, Card, Drawer, Field, inputBase, RoutePath, Spinner } from "./ui";
+import { Canvas, PageHeader } from "./Shell";
+import { Button, Card, Drawer, Field, inputBase, RoutePath, Skeleton, Spinner } from "./ui";
 
 type Axis = NonNullable<import("@sim/contracts").SensitivityRequest["heatmap_axis"]>;
 
@@ -144,59 +146,95 @@ export function Simulator() {
   const openRoute = data?.routes.find((r) => r.id === openId);
 
   if (!catalog || !req) {
-    return <div className="mx-auto max-w-[1080px] px-5 py-10">{error ? <p className="text-danger">{error}</p> : <Spinner label="Loading catalog" />}</div>;
+    return (
+      <Canvas>
+        <PageHeader title="Compare routes" />
+        {error ? (
+          <p role="alert" className="rounded-lg border border-border bg-surface px-4 py-3 text-sm">
+            <span className="font-medium text-danger">{error}</span> Check that the API is running, then reload.
+          </p>
+        ) : (
+          <Spinner label="Loading the corridor catalog" />
+        )}
+      </Canvas>
+    );
   }
 
-  const shareAction = share ? null : (
-    <Button variant="secondary" onClick={save} disabled={!data || shareBusy || loading || sensLoading || sweepPending}>
-      {shareBusy ? "Saving…" : sensLoading || sweepPending ? "Preparing…" : "Save scenario"}
-    </Button>
-  );
+  const corridorTitle = `${catalog.countries.find((c) => c.code === req.source_country)?.name ?? req.source_country} to ${
+    catalog.countries.find((c) => c.code === req.destination_country)?.name ?? req.destination_country
+  }`;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-5 px-5 pb-10 pt-4">
-      <h1 className="sr-only">Compare a transfer</h1>
-      <Card>
+    <Canvas>
+      <PageHeader
+        title={corridorTitle}
+        sub={data ? <Finding data={data} /> : "Pricing every route from live order books, reference FX and network conditions…"}
+        right={
+          share ? null : (
+            <Button onClick={save} disabled={!data || shareBusy || loading || sensLoading || sweepPending}>
+              {shareBusy ? "Saving…" : sensLoading || sweepPending ? "Preparing…" : "Save and share"}
+            </Button>
+          )
+        }
+      />
+      {data && <StatusLine data={data} />}
+
+      {share && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3">
+          <p className="mr-auto text-[13px] text-muted">
+            <span className="font-medium text-text">Scenario saved.</span> This read-only link keeps the exact snapshot; prices never refresh.
+          </p>
+          <div className="flex w-full flex-wrap items-center sm:w-auto">
+            <input readOnly className={`${inputBase} min-w-0 flex-1 rounded-r-none font-mono text-xs sm:w-80`} value={share.url} onFocus={(e) => e.target.select()} aria-label="Scenario link" />
+            <Button className="rounded-l-none" onClick={() => navigator.clipboard.writeText(share.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}>
+              {copied ? "Copied" : "Copy link"}
+            </Button>
+          </div>
+          <a className="rounded-md px-2 py-1.5 text-[13px] font-medium text-text hover:bg-surface-2" href={exportUrl(share.id, "csv")}>CSV</a>
+          <a className="rounded-md px-2 py-1.5 text-[13px] font-medium text-text hover:bg-surface-2" href={exportUrl(share.id, "json")}>JSON</a>
+        </div>
+      )}
+
+      <Card aria-label="Transfer">
         <ComparisonForm catalog={catalog} value={req} onChange={setReq} busy={loading} />
       </Card>
 
-      {error && <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger" role="alert">{error}</p>}
-      {!data && !error && (
-        <div className="py-16 text-center">
-          <Spinner label="Fetching order books, reference FX and network conditions" />
-        </div>
+      {error && (
+        <p className="rounded-lg border border-border bg-surface px-4 py-3 text-sm" role="alert">
+          <span className="font-medium text-danger">Couldn&apos;t price this comparison.</span> {error}
+          {data && <span className="text-muted"> Showing the last good result from {ago(data.snapshot.created_at)}.</span>}
+        </p>
       )}
+      {!data && !error && <VerdictSkeleton />}
       {data && (
         <>
-          <StatusLine data={data} />
-
-          {share && (
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm shadow-soft">
-              <span className="mr-auto text-xs text-muted">Read-only link to this exact snapshot — prices never refresh.</span>
-              <input readOnly className={`${inputBase} w-80 max-w-full font-mono text-xs`} value={share.url} onFocus={(e) => e.target.select()} aria-label="Scenario link" />
-              <Button variant="primary" onClick={() => navigator.clipboard.writeText(share.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}>
-                {copied ? "Copied" : "Copy link"}
-              </Button>
-              <a className="px-1 text-xs text-muted hover:text-text" href={exportUrl(share.id, "csv")}>CSV</a>
-              <a className="px-1 text-xs text-muted hover:text-text" href={exportUrl(share.id, "json")}>JSON</a>
-            </div>
-          )}
-
           <div className={loading ? "opacity-60 transition" : "transition"} aria-busy={loading}>
-            <Verdict data={data} onOpen={setOpenId} action={shareAction} />
+            <Verdict
+              data={data}
+              onOpen={setOpenId}
+              chart={
+                <CostPanel
+                  data={sens}
+                  currency={req.source_currency}
+                  amount={data.request.send_amount}
+                  loading={sensLoading}
+                  error={sensError}
+                />
+              }
+            />
           </div>
           <RouteTable data={data} onOpen={setOpenId} />
 
           <ResearchCard right={sensLoading ? <Spinner label="Sweeping" /> : undefined}>
-            {sensError && <p className="mb-3 text-sm text-danger">{sensError}</p>}
+            {sensError && <p className="mb-3 text-[13px] text-danger">Couldn&apos;t run the sweep: {sensError}</p>}
             {sens ? (
               <div className={sensLoading ? "opacity-60 transition" : "transition"}>
                 <ResearchCharts
                   data={sens}
                   currency={req.source_currency}
                   controls={
-                    <div className="flex flex-wrap items-end gap-3">
-                      <Field label="Amount from" htmlFor="rmin">
+                    <div className="flex flex-wrap items-end gap-2">
+                      <Field label="Amounts from" htmlFor="rmin">
                         <input id="rmin" className={`${inputBase} w-24`} placeholder="50" inputMode="decimal" value={range.min} onChange={(e) => setRange((r) => ({ ...r, min: e.target.value }))} />
                       </Field>
                       <Field label="to" htmlFor="rmax">
@@ -217,8 +255,9 @@ export function Simulator() {
                 />
               </div>
             ) : (
-              <div className="py-10 text-center">
-                <Spinner label="Running sensitivity sweep" />
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" aria-busy>
+                <Skeleton className="h-[300px]" />
+                <Skeleton className="h-[300px]" />
               </div>
             )}
           </ResearchCard>
@@ -228,6 +267,26 @@ export function Simulator() {
       <Drawer open={!!openRoute} onClose={() => setOpenId(null)} title={openRoute && <RoutePath label={openRoute.label} />}>
         {openRoute && data && <RouteDetail r={openRoute} sourceCurrency={data.request.source_currency} />}
       </Drawer>
-    </div>
+    </Canvas>
+  );
+}
+
+function VerdictSkeleton() {
+  return (
+    <Card aria-busy aria-label="Loading results">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)]">
+        <div className="space-y-3 p-5 lg:border-r lg:border-rule">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="mt-6 h-9 w-56" />
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-28 w-full" />
+        </div>
+        <div className="space-y-3 p-5">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-[260px] w-full" />
+        </div>
+      </div>
+    </Card>
   );
 }

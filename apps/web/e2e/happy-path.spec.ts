@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 
 test("compare CAD→EUR, inspect a route, rerank, save and reopen a read-only scenario", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Simulation / estimate — not a payment quote")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("Recorded fixture data")).toBeVisible();
+  await expect(page.getByText("Simulation / estimate, not a payment quote")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/fixture/i).first()).toBeVisible();
 
   // Verdict and a table with both route families
-  await expect(page.getByRole("heading", { name: "Recommended" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recommended route" })).toBeVisible();
   const table = page.getByRole("table").first();
   await expect(table.getByText("USDC", { exact: true }).first()).toBeVisible();
   await page.getByRole("radio", { name: "Conventional" }).click();
@@ -28,16 +28,16 @@ test("compare CAD→EUR, inspect a route, rerank, save and reopen a read-only sc
 
   // Research view renders
   await expect(page.getByText("When does USDC win?")).toBeVisible();
-  await expect(page.getByText("Break-even")).toBeVisible({ timeout: 30_000 });
-  await page.getByText("Stress test — where does USDC still win?").click();
-  await expect(page.getByText("Where does the best USDC route beat the best conventional route?")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Break-even amounts")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Stress test: where does USDC still win?")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Cell figures are USDC's cost advantage/)).toBeVisible();
 
   // Save + open read-only share link
-  await page.getByRole("button", { name: "Save scenario" }).click({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Save and share" }).click({ timeout: 30_000 });
   const link = await page.getByLabel("Scenario link").inputValue();
   expect(link).toMatch(/\/s\/sc_[A-Za-z0-9_-]{20,}$/);
   await page.goto(new URL(link).pathname);
-  await expect(page.getByText("Read-only shared snapshot")).toBeVisible();
+  await expect(page.getByText("Read-only snapshot")).toBeVisible();
   await expect(page.getByRole("link", { name: "Download CSV" })).toBeVisible();
   await expect(page.getByText("When does USDC win?")).toBeVisible(); // sweep saved with the scenario
 });

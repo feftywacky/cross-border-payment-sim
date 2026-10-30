@@ -1,62 +1,67 @@
 @import "tailwindcss";
 
+/* Achromatic ledger: the chrome is ink and grey; the one hue (--accent) marks USDC data only.
+   Ground is a blue-grey ledger tint; cards are white with a 1px edge and no shadow. */
 :root {
-  --bg: #fafaf8;
-  --surface: #ffffff;
-  --surface-2: #f3f3f0;
-  --border: #e8e7e3;
-  --border-strong: #d6d5cf;
-  --text: #141413;
-  --muted: #6b6a65;
-  --faint: #a09f99;
-  --accent: #0b7a5c;       /* USDC routes */
-  --accent-soft: #e7f3ee;
-  --conv: #5a57c9;         /* conventional routes */
-  --conv-soft: #eeedfb;
-  --warn: #9a6408;         /* assumptions */
-  --warn-soft: #fbf4e4;
-  --ok: #17803d;           /* live data / gains */
-  --ok-soft: #e9f5ec;
-  --danger: #b4261f;
-  --danger-soft: #fcecea;
-  --ring: #0b7a5c40;
-  --shadow: 0 1px 2px rgb(20 20 19 / 0.04), 0 4px 16px -4px rgb(20 20 19 / 0.06);
-  /* chart categorical slots (validated: dataviz reference palette, light) */
-  --viz-1: #2a78d6;
-  --viz-2: #eb6834;
-  --viz-3: #1baf7a;
-  --viz-4: #eda100;
-  --viz-neutral: #d9dade;
+  --bg: #f2f4f7;           /* page and sidebar ground */
+  --surface: #ffffff;      /* cards */
+  --surface-2: #f4f5f7;    /* inner wells, hover rows */
+  --active: #e6e8ec;       /* active nav pill, selected segment track */
+  --border: #e3e5e8;       /* card edges */
+  --rule: #eef0f2;         /* row rules inside tables */
+  --border-strong: #cfd3d8;/* inputs and outlined controls */
+  --text: #0a0a0a;
+  --muted: #565b62;        /* secondary text */
+  --faint: #6b6f75;        /* meta, axis ticks (still 4.5:1 on white and on the ground) */
+  --primary: #141414;      /* near-black primary button */
+  --primary-ink: #ffffff;
+  --accent: #1d5fbf;       /* USDC: the one data hue */
+  --accent-soft: #e6eefa;
+  --accent-ink: #123d7a;
+  --conv: #141414;         /* conventional routes are drawn in ink */
+  --conv-2: #8a8a8a;       /* the second conventional series (bank wire) */
+  --warn: #92400e;
+  --warn-soft: #fffbeb;
+  --warn-edge: #fde68a;
+  --ok: #247b50;
+  --ok-soft: #dcfae5;
+  --ok-ink: #04250e;
+  --danger: #c4242a;
+  --danger-soft: #ffedea;
+  --danger-ink: #831c1e;
+  --grid: #e9ebee;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0c0c0d;
-    --surface: #141415;
-    --surface-2: #1b1b1d;
-    --border: #252527;
-    --border-strong: #34343a;
-    --text: #ededeb;
-    --muted: #9b9a95;
-    --faint: #66655f;
-    --accent: #4fcfa6;
-    --accent-soft: #11291f;
-    --conv: #a4a2f7;
-    --conv-soft: #1f1e3a;
-    --warn: #e9b44c;
-    --warn-soft: #2d2410;
-    --ok: #5ad17f;
-    --ok-soft: #11281a;
-    --danger: #f2847b;
-    --danger-soft: #331614;
-    --ring: #4fcfa640;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -8px rgb(0 0 0 / 0.5);
-    --viz-1: #3987e5;
-    --viz-2: #d95926;
-    --viz-3: #199e70;
-    --viz-4: #c98500;
-    --viz-neutral: #3a3b42;
+  :root:not([data-theme="light"]) {
+    --bg: #0a0a0a;
+    --surface: #131313;
+    --surface-2: #1b1b1b;
+    --active: #262626;
+    --border: #232323;
+    --rule: #1d1d1d;
+    --border-strong: #3d3d3d;
+    --text: #f5f5f5;
+    --muted: #b4b4b4;
+    --faint: #949494;
+    --primary: #f5f5f5;
+    --primary-ink: #0a0a0a;
+    --accent: #6a9ff0;
+    --accent-soft: #15233a;
+    --accent-ink: #a9c8f7;
+    --conv: #f0f0f0;
+    --conv-2: #8f8f8f;
+    --warn: #e5a93b;
+    --warn-soft: #2b2414;
+    --warn-edge: #4a3a17;
+    --ok: #3fc07a;
+    --ok-soft: #172a1d;
+    --ok-ink: #3fc07a;
+    --danger: #e5566f;
+    --danger-soft: #2c1a20;
+    --danger-ink: #f08a9b;
+    --grid: #262626;
     color-scheme: dark;
   }
 }
@@ -65,63 +70,62 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-active: var(--active);
   --color-border: var(--border);
+  --color-rule: var(--rule);
   --color-border-strong: var(--border-strong);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-conv: var(--conv);
-  --color-conv-soft: var(--conv-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-warn-edge: var(--warn-edge);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display-serif);
-  --shadow-soft: var(--shadow);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv11";
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .tabular { font-variant-numeric: tabular-nums; }
-
-.display {
-  font-family: var(--font-display-serif), Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  font-variant-numeric: lining-nums;
-}
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 ::selection { background: var(--accent-soft); }
 
-dialog::backdrop { background: rgb(0 0 0 / 0.35); backdrop-filter: blur(2px); }
+dialog::backdrop { background: rgb(0 0 0 / 0.4); }
 
-dialog[open] { animation: drawer-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+dialog[open] { animation: drawer-in 180ms cubic-bezier(0.22, 1, 0.36, 1); }
 @keyframes drawer-in { from { transform: translateX(24px); opacity: 0; } }
 
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
 
+/* Heatmap mark for "USDC faster only": a 1px diagonal hatch in the data hue. */
+.hatch {
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M-1 1l2-2M0 6l6-6M5 7l2-2' stroke='%231d5fbf' stroke-width='1'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   dialog[open] { animation: none; }
+  * { transition-duration: 0ms !important; }
 }

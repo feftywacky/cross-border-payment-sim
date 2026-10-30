@@ -2,7 +2,7 @@
 
 import type { Catalog, ComparisonRequest, Overrides } from "@sim/contracts";
 import { useState } from "react";
-import { Badge, cn, Dot, Field, inputCls, Segmented } from "./ui";
+import { Badge, Chevron, cn, Dot, Field, inputBase, inputCls, Segmented } from "./ui";
 
 export const DEFAULT_OVERRIDES: Overrides = {
   spread_bps: "0",
@@ -34,9 +34,8 @@ const OVERRIDE_FIELDS: { key: keyof Overrides; label: string; hint: string; step
   { key: "max_price_impact_bps", label: "Max price impact (bps)", hint: "Reject deeper book fills", step: "10" },
 ];
 
-const pill =
-  "cursor-pointer appearance-none rounded-full border border-border bg-surface py-1.5 pl-3.5 pr-8 text-sm font-medium outline-none transition hover:border-border-strong focus:border-accent focus:ring-4 focus:ring-[var(--ring)] bg-no-repeat bg-[length:10px] bg-[right_0.85rem_center]";
-const chevron = { backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E\")" };
+const select = "cursor-pointer appearance-none bg-no-repeat bg-[length:10px] bg-[right_0.75rem_center] font-medium";
+const chevron = { backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23777' stroke-width='1.5'/%3E%3C/svg%3E\")" };
 
 export function ComparisonForm({
   catalog,
@@ -87,67 +86,92 @@ export function ComparisonForm({
 
   return (
     <div>
-      <div className="flex flex-col gap-6 p-6 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0">
-          <label htmlFor="amt" className="eyebrow">
-            You send
+      <div className="flex flex-col gap-4 p-5 xl:flex-row xl:items-end xl:gap-6">
+        <div className="min-w-0 xl:w-[300px] xl:flex-none">
+          <label htmlFor="amt" className="text-[13px] font-medium">
+            Sender pays in total
           </label>
-          <div className="mt-1 flex items-baseline gap-2">
+          <div
+            className={cn(
+              "mt-2 flex h-11 items-center gap-2 rounded-md border bg-surface px-3 transition focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25",
+              amountError ? "border-danger" : "border-border-strong hover:border-faint",
+            )}
+          >
             <input
               id="amt"
               aria-label={`Total debited from sender (${value.source_currency})`}
-              className="display min-w-0 bg-transparent text-6xl leading-none outline-none placeholder:text-faint"
-              style={{ fieldSizing: "content", minWidth: "1ch", maxWidth: "100%" } as React.CSSProperties}
+              aria-describedby="amt-help"
+              className="min-w-0 flex-1 bg-transparent text-xl font-semibold tabular outline-none"
               inputMode="decimal"
               value={value.send_amount}
               aria-invalid={!!amountError}
               onChange={(e) => set({ send_amount: e.target.value.replace(/[^0-9.]/g, "") })}
             />
-            <span className="text-xl font-medium text-muted">{value.source_currency}</span>
-            {busy && <span className="ml-1 h-3 w-3 animate-spin self-center rounded-full border-[1.5px] border-border border-t-text" aria-label="Pricing" />}
+            {busy && <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-border-strong border-t-text" aria-label="Pricing" />}
+            <span className="text-sm font-medium text-muted">{value.source_currency}</span>
           </div>
-          <p className={cn("mt-2 text-xs", amountError ? "text-danger" : "text-faint")}>
-            {amountError ?? "Total debited from the sender — identical for every route."}
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select aria-label="From" className={pill} style={chevron} value={value.source_country} onChange={(e) => setCountry("source", e.target.value)}>
-            {catalog.countries.map((c) => (
-              <option key={c.code} value={c.code} disabled={c.code === value.destination_country}>
-                {c.name} · {c.currency}
-              </option>
-            ))}
-          </select>
+        <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+          <Field label="From" htmlFor="from">
+            <select id="from" className={cn(inputBase, "h-11 w-full min-w-[180px] pr-8 sm:w-auto", select)} style={chevron} value={value.source_country} onChange={(e) => setCountry("source", e.target.value)}>
+              {catalog.countries.map((c) => (
+                <option key={c.code} value={c.code} disabled={c.code === value.destination_country}>
+                  {c.name} · {c.currency}
+                </option>
+              ))}
+            </select>
+          </Field>
           <button
             onClick={swap}
             aria-label="Swap direction"
             title="Swap direction"
-            className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-surface-2 hover:text-text"
+            className="grid h-11 w-11 flex-none place-items-center rounded-md text-muted transition hover:bg-surface-2 hover:text-text"
           >
-            ⇄
+            <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 5.5h10M10 2.5l3 3-3 3M13 10.5H3M6 7.5l-3 3 3 3" />
+            </svg>
           </button>
-          <select aria-label="To" className={pill} style={chevron} value={value.destination_country} onChange={(e) => setCountry("destination", e.target.value)}>
-            {catalog.countries.map((c) => (
-              <option key={c.code} value={c.code} disabled={c.code === value.source_country}>
-                {c.name} · {c.currency}
-              </option>
-            ))}
-          </select>
+          <Field label="To" htmlFor="to">
+            <select id="to" className={cn(inputBase, "h-11 w-full min-w-[180px] pr-8 sm:w-auto", select)} style={chevron} value={value.destination_country} onChange={(e) => setCountry("destination", e.target.value)}>
+              {catalog.countries.map((c) => (
+                <option key={c.code} value={c.code} disabled={c.code === value.source_country}>
+                  {c.name} · {c.currency}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="flex min-w-0 flex-col gap-2 xl:ml-auto">
+            <span id="obj-label" className="text-[13px] font-medium">Rank routes by</span>
+            <Segmented
+              label="Rank routes by"
+              value={value.objective ?? "MOST_RECEIVED"}
+              onChange={(objective) => set({ objective, deadline_minutes: objective === "WITHIN_DEADLINE" ? (value.deadline_minutes ?? 24 * 60) : value.deadline_minutes })}
+              options={[
+                { value: "MOST_RECEIVED", label: "Most received" },
+                { value: "FASTEST", label: "Fastest" },
+                { value: "WITHIN_DEADLINE", label: "Within a deadline" },
+              ]}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-border px-6 py-3">
-        <div className="flex gap-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-rule px-5 py-3">
+        <p id="amt-help" className={cn("text-[13px]", amountError ? "text-danger" : "text-muted")}>
+          {amountError ?? "The same total debit for every route."}
+        </p>
+        <div className="flex items-center gap-1" aria-label="Preset amounts">
           {["100", "1000", "10000", "100000"].map((a) => {
             const v = value.source_currency === "JPY" ? String(Number(a) * 150) : a;
             return (
               <button
                 key={a}
                 onClick={() => set({ send_amount: v })}
+                aria-pressed={value.send_amount === v}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-xs tabular transition",
-                  value.send_amount === v ? "bg-surface-2 text-text" : "text-muted hover:bg-surface-2 hover:text-text",
+                  "h-7 rounded-md px-2.5 text-[13px] tabular transition",
+                  value.send_amount === v ? "bg-active font-medium text-text" : "text-muted hover:bg-surface-2 hover:text-text",
                 )}
               >
                 {Intl.NumberFormat(undefined, { notation: "compact" }).format(Number(v))}
@@ -155,35 +179,25 @@ export function ComparisonForm({
             );
           })}
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <Segmented
-            label="Route objective"
-            value={value.objective ?? "MOST_RECEIVED"}
-            onChange={(objective) => set({ objective, deadline_minutes: objective === "WITHIN_DEADLINE" ? (value.deadline_minutes ?? 24 * 60) : value.deadline_minutes })}
-            options={[
-              { value: "MOST_RECEIVED", label: "Most received" },
-              { value: "FASTEST", label: "Fastest" },
-              { value: "WITHIN_DEADLINE", label: "Within a deadline" },
-            ]}
-          />
-          <button
-            aria-expanded={showOptions}
-            onClick={() => setShowOptions((s) => !s)}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-text"
-          >
-            Options
-            {nonDefaultOptions > 0 && <span className="grid h-4 min-w-4 place-items-center rounded-full bg-text px-1 text-[10px] text-bg">{nonDefaultOptions}</span>}
-            <span aria-hidden className={cn("text-[9px] transition", showOptions && "rotate-180")}>▼</span>
-          </button>
-        </div>
+        <button
+          aria-expanded={showOptions}
+          onClick={() => setShowOptions((s) => !s)}
+          className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium text-muted transition hover:bg-surface-2 hover:text-text"
+        >
+          Methods and market assumptions
+          {nonDefaultOptions > 0 && <span className="rounded bg-primary px-1.5 text-xs text-primary-ink">{nonDefaultOptions} changed</span>}
+          <Chevron className={cn("transition", showOptions ? "-rotate-90" : "rotate-90")} />
+        </button>
       </div>
 
       {showOptions && (
-        <div className="flex flex-col gap-5 border-t border-border bg-surface-2/40 px-6 py-5">
+        <div className="flex flex-col gap-6 border-t border-rule bg-surface-2 px-5 py-5">
           {corridor && (
-            <p className="flex items-start gap-2 text-xs text-muted">
+            <p className="flex items-start gap-2 text-[13px] text-muted">
               <Dot tone={corridor.usdc ? "accent" : "warn"} className="mt-1.5" />
-              {corridor.usdc ? "USDC and conventional routes available." : "No USDC route for this corridor."} {corridor.explanation}
+              <span>
+                <span className="text-text">{corridor.usdc ? "USDC and conventional routes available." : "No USDC route for this corridor."}</span> {corridor.explanation}
+              </span>
             </p>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -207,7 +221,7 @@ export function ComparisonForm({
                 ))}
               </select>
             </Field>
-            <Field label="Sender starts funding at" htmlFor="start" hint="Blank = now. Weekends shift bank legs.">
+            <Field label="Sender starts funding at" htmlFor="start" hint="Blank means now. Weekends shift bank legs.">
               <input
                 id="start"
                 type="datetime-local"
@@ -231,16 +245,16 @@ export function ComparisonForm({
           </div>
 
           <div>
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xs font-medium">Market assumptions</span>
-              {overridesActive && <Badge tone="warn">simulation active</Badge>}
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold">Market assumptions</h3>
+              {overridesActive && <Badge tone="warn">Simulation active</Badge>}
               {overridesActive && (
-                <button className="ml-auto text-xs text-muted underline-offset-2 hover:text-text hover:underline" onClick={() => set({ overrides: DEFAULT_OVERRIDES })}>
+                <button className="ml-auto text-[13px] text-muted underline-offset-2 hover:text-text hover:underline" onClick={() => set({ overrides: DEFAULT_OVERRIDES })}>
                   Reset to observed market
                 </button>
               )}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
               {OVERRIDE_FIELDS.map((f) => (
                 <Field key={f.key} label={f.label} hint={f.hint} htmlFor={`ov-${f.key}`}>
                   <input
@@ -248,7 +262,7 @@ export function ComparisonForm({
                     type="number"
                     step={f.step}
                     className={inputCls}
-                    placeholder={f.nullable ? "default" : undefined}
+                    placeholder={f.nullable ? "Default" : undefined}
                     value={(ov[f.key] as string | null) ?? ""}
                     onChange={(e) =>
                       set({ overrides: { ...ov, [f.key]: e.target.value === "" ? (f.nullable ? null : DEFAULT_OVERRIDES[f.key]) : e.target.value } })

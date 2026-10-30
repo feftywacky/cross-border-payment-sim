@@ -6,48 +6,50 @@ export function cn(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
+/** White panel on the ground: a 1px edge, 8px corners, no shadow. */
 export function Card({ className, children, ...rest }: React.HTMLAttributes<HTMLElement>) {
   return (
-    <section className={cn("rounded-2xl border border-border bg-surface shadow-soft", className)} {...rest}>
+    <section className={cn("rounded-lg border border-border bg-surface", className)} {...rest}>
       {children}
     </section>
   );
 }
 
-export function CardHeader({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
+export function CardHeader({ title, sub, right, id }: { title: ReactNode; sub?: ReactNode; right?: ReactNode; id?: string }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 px-5 pb-3 pt-5">
       <div className="min-w-0">
-        <h2 className="text-[15px] font-medium tracking-tight">{title}</h2>
-        {sub && <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">{sub}</p>}
+        <h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2>
+        {sub && <p className="mt-1 max-w-2xl text-[13px] leading-5 text-muted">{sub}</p>}
       </div>
       {right}
     </div>
   );
 }
 
-type Tone = "neutral" | "accent" | "conv" | "warn" | "ok" | "danger";
+type Tone = "neutral" | "accent" | "warn" | "ok" | "danger";
 const TONES: Record<Tone, string> = {
-  neutral: "bg-surface-2 text-muted",
-  accent: "bg-accent-soft text-accent",
-  conv: "bg-conv-soft text-conv",
+  neutral: "bg-active text-text",
+  accent: "bg-accent-soft text-accent-ink",
   warn: "bg-warn-soft text-warn",
-  ok: "bg-ok-soft text-ok",
-  danger: "bg-danger-soft text-danger",
+  ok: "bg-ok-soft text-ok-ink",
+  danger: "bg-danger-soft text-danger-ink",
 };
 
+/** Pale-tint pill with dark text of the same hue; sits beside a value, never above a heading. */
 export function Badge({ tone = "neutral", children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return (
-    <span title={title} className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium", TONES[tone])}>
+    <span title={title} className={cn("inline-flex flex-none items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium", TONES[tone])}>
       {children}
     </span>
   );
 }
 
-/** Small coloured dot — the only colour cue a route row carries. */
+/** Route-type mark: a filled dot in the data hue for USDC, a hollow ink ring for conventional routes. */
 export function Dot({ tone, className }: { tone: "accent" | "conv" | "warn" | "ok" | "danger" | "neutral"; className?: string }) {
-  const bg = { accent: "bg-accent", conv: "bg-conv", warn: "bg-warn", ok: "bg-ok", danger: "bg-danger", neutral: "bg-faint" }[tone];
-  return <span aria-hidden className={cn("inline-block h-1.5 w-1.5 shrink-0 rounded-full", bg, className)} />;
+  if (tone === "conv") return <span aria-hidden className={cn("inline-block h-2 w-2 shrink-0 rounded-full border-[1.5px] border-conv", className)} />;
+  const bg = { accent: "bg-accent", warn: "bg-warn", ok: "bg-ok", danger: "bg-danger", neutral: "bg-faint" }[tone];
+  return <span aria-hidden className={cn("inline-block h-2 w-2 shrink-0 rounded-full", bg, className)} />;
 }
 
 export function Button({
@@ -56,13 +58,17 @@ export function Button({
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" }) {
   const v = {
-    primary: "bg-text text-bg hover:opacity-85",
-    secondary: "border border-border bg-surface hover:border-border-strong",
+    primary: "bg-primary text-primary-ink hover:opacity-85",
+    secondary: "bg-active text-text hover:bg-border-strong/60",
     ghost: "text-muted hover:bg-surface-2 hover:text-text",
   }[variant];
   return (
     <button
-      className={cn("inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition disabled:opacity-40", v, className)}
+      className={cn(
+        "inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100",
+        v,
+        className,
+      )}
       {...rest}
     />
   );
@@ -70,18 +76,18 @@ export function Button({
 
 export function Field({ label, hint, children, htmlFor }: { label: string; hint?: ReactNode; children: ReactNode; htmlFor?: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-xs text-muted">
+    <div className="flex min-w-0 flex-col gap-2">
+      <label htmlFor={htmlFor} className="text-[13px] font-medium">
         {label}
       </label>
       {children}
-      {hint && <p className="text-[11px] leading-snug text-faint">{hint}</p>}
+      {hint && <p className="text-xs leading-4 text-faint">{hint}</p>}
     </div>
   );
 }
 
 export const inputBase =
-  "min-w-0 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm tabular outline-none transition hover:border-border-strong focus:border-accent focus:ring-4 focus:ring-[var(--ring)]";
+  "h-9 min-w-0 rounded-md border border-border-strong bg-surface px-2.5 text-sm tabular outline-none transition hover:border-faint focus:border-accent focus:ring-2 focus:ring-accent/25";
 export const inputCls = `w-full ${inputBase}`;
 
 export function Segmented<T extends string>({
@@ -96,7 +102,7 @@ export function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full bg-surface-2 p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex h-9 flex-none items-center rounded-md bg-active p-0.5">
       {options.map((o) => (
         <button
           key={o.value}
@@ -104,14 +110,22 @@ export function Segmented<T extends string>({
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "rounded-full px-3 py-1 text-xs font-medium transition",
-            value === o.value ? "bg-surface text-text shadow-sm" : "text-muted hover:text-text",
+            "h-8 whitespace-nowrap rounded-[5px] px-3 text-[13px] font-medium transition",
+            value === o.value ? "bg-surface text-text" : "text-muted hover:text-text",
           )}
         >
           {o.label}
         </button>
       ))}
     </div>
+  );
+}
+
+export function Chevron({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" className={cn("h-3.5 w-3.5 flex-none", className)} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M6 4l4 4-4 4" />
+    </svg>
   );
 }
 
@@ -129,8 +143,8 @@ export function Disclosure({
 }) {
   return (
     <details open={defaultOpen} className={cn("group", className)}>
-      <summary className="flex cursor-pointer select-none items-center gap-2 text-xs text-muted transition hover:text-text">
-        <span aria-hidden className="inline-block text-[10px] transition group-open:rotate-90">▶</span>
+      <summary className="flex cursor-pointer select-none items-center gap-1.5 text-[13px] text-muted transition hover:text-text">
+        <Chevron className="transition group-open:rotate-90" />
         {summary}
       </summary>
       <div className="pt-3">{children}</div>
@@ -138,7 +152,7 @@ export function Disclosure({
   );
 }
 
-/** Side drawer built on the native <dialog> (focus trap + Esc handled by the browser). */
+/** Side drawer built on the native <dialog> (focus trap + Esc handled by the browser). It floats, so it may cast a shadow. */
 export function Drawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -154,24 +168,31 @@ export function Drawer({ open, onClose, title, children }: { open: boolean; onCl
       onClick={(e) => e.target === ref.current && onClose()}
       className="m-0 ml-auto h-dvh max-h-dvh w-full max-w-2xl border-l border-border bg-surface p-0 text-text shadow-2xl"
     >
-      <div className="sticky top-0 z-10 flex items-start justify-between gap-3 bg-surface/90 px-6 py-4 backdrop-blur">
-        <div className="min-w-0 text-[15px] font-medium leading-snug tracking-tight">{title}</div>
-        <Button variant="ghost" onClick={onClose} aria-label="Close details" className="-mr-2 -mt-1 h-8 w-8 px-0">
-          ✕
-        </Button>
+      <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-surface px-6 py-4">
+        <div className="min-w-0 text-base font-semibold leading-6">{title}</div>
+        <button onClick={onClose} aria-label="Close details" className="-mr-2 grid h-8 w-8 flex-none place-items-center rounded-md text-muted transition hover:bg-surface-2 hover:text-text">
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
       </div>
-      <div className="px-6 pb-10">{children}</div>
+      <div className="px-6 pb-10 pt-6">{children}</div>
     </dialog>
   );
 }
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
   return (
-    <span role="status" className="inline-flex items-center gap-2 text-xs text-muted">
-      <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-border border-t-text" />
+    <span role="status" className="inline-flex items-center gap-2 text-[13px] text-muted">
+      <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-border-strong border-t-text" />
       {label}
     </span>
   );
+}
+
+/** Flat grey bar at the size of the value it stands in for (loading state; no shimmer). */
+export function Skeleton({ className }: { className?: string }) {
+  return <span aria-hidden className={cn("block rounded bg-active", className)} />;
 }
 
 /** Route path "A → B → C" with muted arrows so the eye reads the hops, not the punctuation. */
@@ -181,10 +202,10 @@ export function RoutePath({ label, className }: { label: string; className?: str
     <span className={className} title={label}>
       {parts.map((p, i) => (
         <span key={i}>
-          {i > 0 && <span className="px-1 text-faint">→</span>}
+          {i > 0 && <span className="text-faint"> → </span>}
           {p.split(/(\s*\([^)]*\)?)/).map((seg, j) =>
             seg.trimStart().startsWith("(") ? (
-              <span key={j} className="text-faint">{seg}</span>
+              <span key={j} className="text-muted">{seg}</span>
             ) : (
               seg
             ),
