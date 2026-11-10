@@ -22,7 +22,10 @@ from app.schemas import (
     Series,
     SeriesPoint,
 )
-from app.service import DISCLAIMER
+from pydantic import ValidationError
+
+from app.schemas import Overrides
+from app.service import DISCLAIMER, ValidationProblem, validate
 
 DEFAULT_AXIS_VALUES = {
     "network_fee_multiplier": ["0.5", "1", "2", "5", "10", "25"],
@@ -63,7 +66,10 @@ def _space(lo: Decimal, hi: Decimal, n: int, scale: str, ccy: str) -> list[str]:
 def resolve_amounts(req: SensitivityRequest) -> list[str]:
     ccy = req.baseline.source_currency
     if req.amounts:
-        vals = sorted({D(a) for a in req.amounts})
+        try:
+            vals = sorted({D(a) for a in req.amounts})
+        except ArithmeticError as exc:
+            raise GridTooLarge("amounts must be decimal numbers") from exc
         if any(v <= 0 for v in vals):
             raise GridTooLarge("amounts must be positive")
         return [s(v) for v in vals]
@@ -80,6 +86,26 @@ def _variant(base: ComparisonRequest, amount: str, axis: str | None = None, valu
     return base.model_copy(update={"send_amount": amount, "overrides": ov})
 
 
+def _check_amounts(base: ComparisonRequest, amounts: list[str], what: str) -> None:
+    """Every grid amount must pass the same validation as a single comparison (positive, in band, minor units)."""
+    for a in amounts:
+        try:
+            D(a)
+            validate(base.model_copy(update={"send_amount": a}))
+        except (ArithmeticError, ValueError) as exc:
+            msg = exc.args[0] if isinstance(exc, ValidationProblem) else "must be a decimal number"
+            raise GridTooLarge(f"{what} {a!r}: {msg}") from exc
+
+
+def _check_axis_values(base: ComparisonRequest, axis: str, values: list[str]) -> None:
+    """Heatmap values go through the same bounds as user overrides."""
+    for v in values:
+        try:
+            Overrides.model_validate({**base.overrides.model_dump(), axis: v})
+        except ValidationError as exc:
+            raise GridTooLarge(f"heatmap value {v!r} for {axis}: {exc.errors()[0]['msg']}") from exc
+
+
 def _best(routes: list[RouteResult], kind: str) -> RouteResult | None:
     pool = [r for r in routes if (r.type == "usdc") == (kind == "usdc")]
     ranked = sort_most_received(pool)
@@ -94,18 +120,35 @@ def _point(amount: str, r: RouteResult | None) -> SeriesPoint:
                        all_in_cost_pct=r.all_in_cost_pct, typical_minutes=r.duration.typical, eligible=True)
 
 
-def _classify(u: RouteResult | None, c: RouteResult | None) -> tuple[str, str | None, int | None]:
-    if u is None or c is None:
-        return "unavailable", None, None
-    cost_adv = D(c.all_in_cost_pct) - D(u.all_in_cost_pct) if u.all_in_cost_pct and c.all_in_cost_pct else None
-    cheaper = D(u.recipient_amount) > D(c.recipient_amount)
-    t_adv = None
-    faster = False
-    if u.duration.known and c.duration.known:
-        t_adv = c.duration.typical - u.duration.typical
-        faster = t_adv > 0
-    cls = "both" if cheaper and faster else "cheaper" if cheaper else "faster" if faster else "neither"
-    return cls, s(cost_adv, 4) if cost_adv is not None else None, t_adv
+def _classify(routes: list[RouteResult]) -> tuple[str, RouteResult | None, RouteResult | None, str | None, int | None]:
+    """Compare USDC routes against the best conventional route (most received).
+
+    "both" means a single USDC route delivers more *and* has a shorter known typical time; otherwise "cheaper" /
+    "faster" can be met by different USDC routes (the cheapest one, or the fastest one). Returns
+    (classification, usdc route shown, conventional route, cost advantage pct, time advantage minutes)."""
+    c = _best(routes, "conv")
+    usdc = sort_most_received([r for r in routes if r.type == "usdc"])
+    if c is None or not usdc:
+        return "unavailable", usdc[0] if usdc else None, c, None, None
+    c_amt = D(c.recipient_amount)
+    c_t = c.duration.typical if c.duration.known else None
+
+    def faster(r: RouteResult) -> bool:
+        return c_t is not None and r.duration.known and r.duration.typical < c_t
+
+    both = next((r for r in usdc if D(r.recipient_amount) > c_amt and faster(r)), None)
+    best = usdc[0]
+    if both is not None:
+        cls, u = "both", both
+    elif D(best.recipient_amount) > c_amt:
+        cls, u = "cheaper", best
+    else:
+        quick = next((r for r in sort_fastest(usdc) if faster(r)), None)
+        cls, u = ("faster", quick) if quick is not None else ("neither", best)
+    cost_adv = (s(D(c.all_in_cost_pct) - D(u.all_in_cost_pct), 4)
+                if u.all_in_cost_pct is not None and c.all_in_cost_pct is not None else None)
+    t_adv = c_t - u.duration.typical if c_t is not None and u.duration.known else None
+    return cls, u, c, cost_adv, t_adv
 
 
 def _crossovers(amounts: list[str], a: list[SeriesPoint], b: list[SeriesPoint], names: tuple[str, str]) -> list[Crossover]:
@@ -142,9 +185,11 @@ def run(req: SensitivityRequest, snap: Snapshot, *, replay: bool = False) -> Sen
     amounts = resolve_amounts(req)
     axis = req.heatmap_axis
     values = req.heatmap_values or (DEFAULT_AXIS_VALUES[axis] if axis else [])
-    for v in values:
-        D(v)
+    if axis:
+        _check_axis_values(base, axis, values)
     hm_amounts = req.heatmap_amounts or (amounts[:: max(1, len(amounts) // 8)][:8] if axis else [])
+    _check_amounts(base, amounts, "amount")
+    _check_amounts(base, hm_amounts, "heatmap amount")
     cells = len(values) * len(hm_amounts)
     if len(amounts) > 40 or cells > MAX_HEATMAP_CELLS or len(amounts) + cells > settings.max_sensitivity_points:
         raise GridTooLarge(f"grid too large: {len(amounts)} amounts + {cells} heatmap cells "
@@ -176,9 +221,7 @@ def run(req: SensitivityRequest, snap: Snapshot, *, replay: bool = False) -> Sen
     heat = []
     for v in values:
         for a in hm_amounts:
-            routes = price(_variant(base, a, axis, v))
-            u, c = _best(routes, "usdc"), _best(routes, "conv")
-            cls, cost_adv, t_adv = _classify(u, c)
+            cls, u, c, cost_adv, t_adv = _classify(price(_variant(base, a, axis, v)))
             heat.append(HeatmapCell(amount=a, axis_value=v, classification=cls, cost_advantage_pct=cost_adv,
                                     time_advantage_minutes=t_adv, best_usdc_route_id=u.id if u else None,
                                     best_conventional_route_id=c.id if c else None))

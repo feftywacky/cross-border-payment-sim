@@ -5,7 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, exportUrl } from "@/lib/api";
 import { ago } from "@/lib/format";
-import { ComparisonForm, DEFAULT_OVERRIDES } from "./ComparisonForm";
+import { queryToRequest, requestToQuery } from "@/lib/query";
+import { amountProblem, ComparisonForm } from "./ComparisonForm";
 import { AXIS_LABEL, CostPanel, ResearchCard, ResearchCharts } from "./Research";
 import { Finding, RouteTable, StatusLine, Verdict } from "./Results";
 import { RouteDetail } from "./RouteDetail";
@@ -13,27 +14,6 @@ import { Canvas, PageHeader } from "./Shell";
 import { Button, Card, Drawer, Field, inputBase, RoutePath, Skeleton, Spinner } from "./ui";
 
 type Axis = NonNullable<import("@sim/contracts").SensitivityRequest["heatmap_axis"]>;
-
-function initialRequest(catalog: Catalog, q: URLSearchParams): ComparisonRequest {
-  const country = (code: string | null, fallback: string) => catalog.countries.find((c) => c.code === code) ?? catalog.countries.find((c) => c.code === fallback)!;
-  const src = country(q.get("from"), catalog.default_corridor.source_country);
-  const dst = country(q.get("to"), catalog.default_corridor.destination_country);
-  const ccy = catalog.currencies.find((c) => c.code === src.currency);
-  return {
-    source_country: src.code,
-    source_currency: src.currency,
-    destination_country: dst.code === src.code ? catalog.countries.find((c) => c.code !== src.code)!.code : dst.code,
-    destination_currency: (dst.code === src.code ? catalog.countries.find((c) => c.code !== src.code)! : dst).currency,
-    send_amount: q.get("amount") ?? ccy?.amount_default ?? "2500",
-    funding_method: q.get("funding") ?? "any_bank",
-    payout_method: q.get("payout") ?? "any_bank",
-    objective: (q.get("objective") as ComparisonRequest["objective"]) ?? "MOST_RECEIVED",
-    deadline_minutes: q.get("deadline") ? Number(q.get("deadline")) : null,
-    mode: "current",
-    start_time: null,
-    overrides: DEFAULT_OVERRIDES,
-  };
-}
 
 export function Simulator() {
   const q = useSearchParams();
@@ -61,7 +41,7 @@ export function Simulator() {
       .catalog()
       .then((c) => {
         setCatalog(c);
-        setReq(initialRequest(c, new URLSearchParams(q.toString())));
+        setReq(queryToRequest(c, new URLSearchParams(q.toString())));
       })
       .catch((e) => setError(`Could not load catalog: ${e.message}`));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,9 +51,8 @@ export function Simulator() {
 
   // Recompute on every parameter change (debounced); keep the previous result visible meanwhile.
   useEffect(() => {
-    if (!req) return;
-    const n = Number(req.send_amount);
-    if (!Number.isFinite(n) || n <= 0) return;
+    if (!req || !catalog) return;
+    if (amountProblem(req.send_amount, catalog.currencies.find((c) => c.code === req.source_currency))) return;
     if (req.objective === "WITHIN_DEADLINE" && !req.deadline_minutes) return;
     const t = setTimeout(() => {
       abort.current?.abort();
@@ -91,11 +70,7 @@ export function Simulator() {
           if (e.name !== "AbortError") setError(e instanceof ApiError && e.status === 429 ? "Rate limited — wait a few seconds." : e.message);
         })
         .finally(() => !ctrl.signal.aborted && setLoading(false));
-      const p = new URLSearchParams({ from: req.source_country, to: req.destination_country, amount: req.send_amount, objective: req.objective ?? "MOST_RECEIVED" });
-      if (req.funding_method !== "any_bank") p.set("funding", req.funding_method!);
-      if (req.payout_method !== "any_bank") p.set("payout", req.payout_method!);
-      if (req.deadline_minutes) p.set("deadline", String(req.deadline_minutes));
-      router.replace(`${pathname}?${p}`, { scroll: false });
+      router.replace(`${pathname}?${requestToQuery(req)}`, { scroll: false });
     }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

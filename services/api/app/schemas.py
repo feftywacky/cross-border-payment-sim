@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 SourceStatus = Literal[
     "live_api", "provider_estimate", "published_tariff", "historical", "user_assumption", "unavailable"
@@ -152,6 +152,20 @@ class ReferenceFx(BaseModel):
 # --------------------------------------------------------------------------- requests
 
 
+# field -> (lower, upper, lower bound exclusive?)
+OVERRIDE_BOUNDS: dict[str, tuple[Decimal, Decimal, bool]] = {
+    "spread_bps": (Decimal(0), Decimal(5000), False),
+    "network_fee_multiplier": (Decimal(0), Decimal(1000), False),
+    "depth_multiplier": (Decimal(0), Decimal(1000), True),
+    "provider_fee_multiplier": (Decimal(0), Decimal(100), False),
+    "payout_delay_hours": (Decimal(0), Decimal(24 * 30), False),
+    "funding_delay_hours": (Decimal(0), Decimal(24 * 30), False),
+    "bank_fx_spread_bps": (Decimal(0), Decimal(5000), False),
+    "max_price_impact_bps": (Decimal(0), Decimal(5000), True),
+    "trading_fee_override_pct": (Decimal(0), Decimal(10), False),
+}
+
+
 class Overrides(BaseModel):
     """Counterfactual market assumptions. Any non-default value marks results as simulations."""
 
@@ -174,6 +188,19 @@ class Overrides(BaseModel):
     @classmethod
     def _opt(cls, v: str | None) -> str | None:
         return None if v in (None, "") else _decimal_str(v)
+
+    @model_validator(mode="after")
+    def _bounds(self) -> Overrides:
+        # Out-of-range stresses produce nonsense (negative fees create money, negative delays travel back in time,
+        # negative depth flips book quantities), so each knob is held to a physically meaningful range.
+        for name, (lo, hi, lo_open) in OVERRIDE_BOUNDS.items():
+            raw = getattr(self, name)
+            if raw is None:
+                continue
+            v = Decimal(raw)
+            if (v <= lo if lo_open else v < lo) or v > hi:
+                raise ValueError(f"{name} must be {'>' if lo_open else '≥'} {lo} and ≤ {hi} (got {raw})")
+        return self
 
     def is_default(self) -> bool:
         return self == Overrides()

@@ -102,3 +102,54 @@ def test_negative_cost_explained_as_value(client):
     data = client.post("/api/v1/comparisons", json=body(amount="5000")).json()
     for r in data["routes"]:
         D(r["all_in_cost_pct"])  # parseable, may be negative when a route beats the stale daily reference
+
+
+@pytest.mark.parametrize("ov", [
+    {"network_fee_multiplier": "-5"}, {"depth_multiplier": "-1"}, {"depth_multiplier": "0"},
+    {"spread_bps": "-500"}, {"payout_delay_hours": "-100"}, {"funding_delay_hours": "-1"},
+    {"max_price_impact_bps": "0"}, {"trading_fee_override_pct": "-1"}, {"provider_fee_multiplier": "-3"},
+    {"bank_fx_spread_bps": "-10"}, {"trading_fee_override_pct": "50"},
+])
+def test_out_of_range_overrides_rejected(client, ov):
+    r = client.post("/api/v1/comparisons", json=body(overrides=ov))
+    assert r.status_code == 422, (ov, r.text)
+
+
+def test_in_range_overrides_accepted(client):
+    ov = {"network_fee_multiplier": "0", "spread_bps": "0", "trading_fee_override_pct": "0", "payout_delay_hours": "48"}
+    assert client.post("/api/v1/comparisons", json=body(overrides=ov)).status_code == 200
+
+
+@pytest.mark.parametrize("extra", [
+    {"heatmap_values": ["abc"]}, {"heatmap_values": ["-3"]}, {"heatmap_amounts": ["abc"]},
+    {"heatmap_amounts": ["-5"]}, {"amounts": ["1e40"]}, {"amounts": ["abc"]},
+    {"amount_range": {"min": "50", "max": "1e12"}},
+])
+def test_sensitivity_bad_grid_is_422_not_500(client, extra):
+    r = client.post("/api/v1/analyses/sensitivity", json={"baseline": body(), **extra})
+    assert r.status_code == 422, (extra, r.text)
+
+
+def test_heatmap_both_means_one_route_wins_on_money_and_time(client):
+    sens = client.post("/api/v1/analyses/sensitivity", json={"baseline": body()}).json()
+    comp = {}
+    for cell in sens["heatmap"]:
+        if cell["classification"] == "both":
+            assert cell["time_advantage_minutes"] > 0 and D(cell["cost_advantage_pct"]) > 0
+        comp[cell["classification"]] = True
+    assert comp  # at least one classified cell
+
+
+def test_rate_limit_uses_forwarded_client_behind_trusted_proxy():
+    from starlette.requests import Request
+
+    from app.main import client_ip
+
+    def req(peer, xff=None):
+        headers = [(b"x-forwarded-for", xff.encode())] if xff else []
+        return Request({"type": "http", "client": (peer, 1), "headers": headers})
+
+    assert client_ip(req("127.0.0.1", "203.0.113.7")) == "203.0.113.7"
+    assert client_ip(req("127.0.0.1", "198.51.100.1, 203.0.113.7")) == "203.0.113.7"
+    assert client_ip(req("203.0.113.9", "1.2.3.4")) == "203.0.113.9"  # untrusted peer can't spoof
+    assert client_ip(req("127.0.0.1")) == "127.0.0.1"

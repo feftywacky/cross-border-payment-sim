@@ -2,19 +2,8 @@
 
 import type { Catalog, ComparisonRequest, Overrides } from "@sim/contracts";
 import { useState } from "react";
+import { DEFAULT_OVERRIDES } from "@/lib/query";
 import { Badge, Chevron, cn, Dot, Field, inputBase, inputCls, Segmented } from "./ui";
-
-export const DEFAULT_OVERRIDES: Overrides = {
-  spread_bps: "0",
-  network_fee_multiplier: "1",
-  depth_multiplier: "1",
-  provider_fee_multiplier: "1",
-  payout_delay_hours: "0",
-  funding_delay_hours: "0",
-  bank_fx_spread_bps: null,
-  max_price_impact_bps: "100",
-  trading_fee_override_pct: null,
-};
 
 export function isDefaultOverrides(o: Overrides) {
   return (Object.keys(DEFAULT_OVERRIDES) as (keyof Overrides)[]).every(
@@ -33,6 +22,18 @@ const OVERRIDE_FIELDS: { key: keyof Overrides; label: string; hint: string; step
   { key: "trading_fee_override_pct", label: "Taker fee override (%)", hint: "Replace every venue's fee tier", step: "0.01", nullable: true },
   { key: "max_price_impact_bps", label: "Max price impact (bps)", hint: "Reject deeper book fills", step: "10" },
 ];
+
+/** Client-side mirror of the API's amount validation, so invalid input never round-trips as a 422. */
+export function amountProblem(amount: string, ccy?: Catalog["currencies"][number]): string | null {
+  if (!/^\d*\.?\d*$/.test(amount) || !amount || amount === ".") return "Enter a positive amount";
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return "Enter a positive amount";
+  if (ccy && n > Number(ccy.amount_max)) return `Max ${Number(ccy.amount_max).toLocaleString()} ${ccy.code}`;
+  const decimals = amount.split(".")[1]?.length ?? 0;
+  const dp = ccy?.dp ?? 2;
+  if (decimals > dp) return dp === 0 ? `${ccy?.code} has no minor units; enter a whole amount` : `Use at most ${dp} decimal places`;
+  return null;
+}
 
 const select = "cursor-pointer appearance-none bg-no-repeat bg-[length:10px] bg-[right_0.75rem_center] font-medium";
 const chevron = { backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23777' stroke-width='1.5'/%3E%3C/svg%3E\")" };
@@ -74,13 +75,7 @@ export function ComparisonForm({
       payout_method: "any_bank",
     });
 
-  const amountNum = Number(value.send_amount);
-  const amountError =
-    !value.send_amount || !Number.isFinite(amountNum) || amountNum <= 0
-      ? "Enter a positive amount"
-      : ccy && amountNum > Number(ccy.amount_max)
-        ? `Max ${Number(ccy.amount_max).toLocaleString()} ${ccy.code}`
-        : null;
+  const amountError = amountProblem(value.send_amount, ccy);
   const nonDefaultOptions =
     (value.funding_method !== "any_bank" ? 1 : 0) + (value.payout_method !== "any_bank" ? 1 : 0) + (value.start_time ? 1 : 0) + (overridesActive ? 1 : 0);
 
@@ -260,6 +255,7 @@ export function ComparisonForm({
                   <input
                     id={`ov-${f.key}`}
                     type="number"
+                    min={0}
                     step={f.step}
                     className={inputCls}
                     placeholder={f.nullable ? "Default" : undefined}

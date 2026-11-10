@@ -26,6 +26,10 @@ class Settings:
     fx_ttl_s: float = 3600.0
     book_expiry_s: int = 60  # an executable-price observation older than this is stale for "current" mode
     rate_limit_per_minute: int = field(default_factory=lambda: int(_env("RATE_LIMIT_PER_MINUTE", "60")))
+    # Peers allowed to set X-Forwarded-For (the Next.js proxy). IPs or CIDRs, comma-separated.
+    trusted_proxies: list[str] = field(
+        default_factory=lambda: (_env("TRUSTED_PROXIES", "127.0.0.1,::1") or "").split(",")
+    )
     wise_api_token: str | None = field(default_factory=lambda: _env("WISE_API_TOKEN"))
     wise_api_base: str = field(default_factory=lambda: _env("WISE_API_BASE", "https://api.wise.com"))
     max_sensitivity_points: int = 100

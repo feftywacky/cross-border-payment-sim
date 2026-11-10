@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import secrets
 import time
 from collections import defaultdict, deque
@@ -55,13 +56,41 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_me
                    allow_headers=["content-type"])
 
 _hits: dict[str, deque] = defaultdict(deque)
+_last_sweep = 0.0
+_TRUSTED = [ipaddress.ip_network(p.strip(), strict=False) for p in settings.trusted_proxies if p.strip()]
+
+
+def _trusted(host: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(addr in net for net in _TRUSTED)
+
+
+def client_ip(request: Request) -> str:
+    """The end client's address. Behind the Next.js proxy every request arrives from the proxy, so the
+    X-Forwarded-For chain is walked right-to-left past trusted proxies; it is ignored from untrusted peers."""
+    peer = request.client.host if request.client else "unknown"
+    if not _trusted(peer):
+        return peer
+    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    for hop in reversed(hops):
+        if not _trusted(hop):
+            return hop
+    return hops[0] if hops else peer
 
 
 @app.middleware("http")
 async def throttle(request: Request, call_next):
+    global _last_sweep
     if request.method == "POST":
-        ip = request.client.host if request.client else "unknown"
+        ip = client_ip(request)
         now = time.monotonic()
+        if now - _last_sweep > 60:  # drop idle clients so the table doesn't grow without bound
+            for k in [k for k, v in _hits.items() if not v or now - v[-1] > 60]:
+                del _hits[k]
+            _last_sweep = now
         q = _hits[ip]
         while q and now - q[0] > 60:
             q.popleft()

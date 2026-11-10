@@ -51,21 +51,48 @@ function Amount({ amount, unit, className }: { amount: string | null | undefined
 
 /* ------------------------------------------------------------------ finding */
 
-/** The screen's one finding, in words: best USDC against best conventional, on money and on time. */
+/** The best route of one kind under the chosen objective (most received; fastest known; most within deadline). */
+function bestFor(data: ComparisonResponse, usdc: boolean) {
+  const pool = data.routes.filter((r) => (r.type === "usdc") === usdc);
+  const amt = (r: RouteResult) => Number(r.recipient_amount);
+  const known = pool.filter((r) => r.duration.known && r.duration.typical != null);
+  if (data.request.objective === "FASTEST") {
+    return [...known].sort((a, b) => a.duration.typical! - b.duration.typical! || amt(b) - amt(a))[0];
+  }
+  if (data.request.objective === "WITHIN_DEADLINE" && data.request.deadline_minutes) {
+    const within = known.filter((r) => r.duration.typical! <= data.request.deadline_minutes!);
+    return within.sort((a, b) => amt(b) - amt(a))[0];
+  }
+  return bestOf(data, usdc);
+}
+
+/** The screen's one finding, in words: best USDC against best conventional (under the ranking objective),
+    on money and on time. */
 export function Finding({ data }: { data: ComparisonResponse }) {
-  const usdc = bestOf(data, true);
-  const conv = bestOf(data, false);
+  const usdc = bestFor(data, true);
+  const conv = bestFor(data, false);
   const ccy = data.request.destination_currency;
-  if (!usdc && !conv) return <>No eligible route for this corridor and amount.</>;
-  if (!usdc) return <>No USDC route is available here; {data.routes.length} conventional routes priced.</>;
-  if (!conv) return <>No conventional comparator is priced; {data.routes.length} USDC routes compared.</>;
+  const objective = data.request.objective ?? "MOST_RECEIVED";
+  const which = objective === "FASTEST" ? "fastest" : objective === "WITHIN_DEADLINE" ? "best in-deadline" : "best";
+  const usdcCount = data.routes.filter((r) => r.type === "usdc").length;
+  if (!usdc && !conv) {
+    return <>{objective === "MOST_RECEIVED" ? "No eligible route for this corridor and amount." : "No route meets this objective; see the table for all priced routes."}</>;
+  }
+  if (!usdc) {
+    return usdcCount ? (
+      <>No USDC route meets this objective; {usdcCount} USDC routes are priced below.</>
+    ) : (
+      <>No USDC route is available here; {data.routes.length} conventional routes priced.</>
+    );
+  }
+  if (!conv) return <>No conventional route meets this objective; {usdcCount} USDC routes compared.</>;
   const d = shown(usdc.recipient_amount, ccy) - shown(conv.recipient_amount, ccy);
   const dStr = money(String(Math.abs(d)), ccy);
   const tu = usdc.duration.known ? usdc.duration.typical : null;
   const tc = conv.duration.known ? conv.duration.typical : null;
   return (
     <>
-      The best USDC route delivers{" "}
+      The {which} USDC route delivers{" "}
       <span className={cn("font-medium tabular", d > 0 ? "text-ok" : d < 0 ? "text-danger" : "text-text")}>
         {d === 0 ? "the same amount as" : `${dStr} ${d > 0 ? "more" : "less"} than`}
       </span>{" "}
@@ -301,18 +328,23 @@ export function RouteTable({ data, onOpen }: { data: ComparisonResponse; onOpen:
   const [expanded, setExpanded] = useState(false);
   const src = data.request.source_currency;
   const pareto = new Set(data.pareto_route_ids);
-  const networks = useMemo(() => [...new Set(data.routes.map((r) => r.network).filter(Boolean))] as string[], [data]);
+  const networks = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of data.routes) if (r.network && !m.has(r.network)) m.set(r.network, networkName(r) ?? r.network);
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [data]);
 
   const rows = useMemo(() => {
     let rs = data.routes.filter((r) => kind === "all" || (kind === "usdc") === (r.type === "usdc"));
     if (network !== "all") rs = rs.filter((r) => r.type !== "usdc" || r.network === network);
     if (paretoOnly) rs = rs.filter((r) => pareto.has(r.id));
     const t = (r: RouteResult) => (r.duration.known ? (r.duration.typical ?? Infinity) : Infinity);
+    const cost = (r: RouteResult) => (r.all_in_cost_pct == null ? Infinity : Number(r.all_in_cost_pct));
     return [...rs].sort((a, b) =>
       sort === "received"
         ? Number(b.recipient_amount) - Number(a.recipient_amount)
         : sort === "cost"
-          ? Number(a.all_in_cost_pct) - Number(b.all_in_cost_pct)
+          ? cost(a) - cost(b) || Number(b.recipient_amount) - Number(a.recipient_amount)
           : t(a) - t(b) || Number(b.recipient_amount) - Number(a.recipient_amount),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -356,9 +388,9 @@ export function RouteTable({ data, onOpen }: { data: ComparisonResponse; onOpen:
           {kind !== "conv" && networks.length > 1 && (
             <select aria-label="Network" className={inputBase} value={network} onChange={(e) => setNetwork(e.target.value)}>
               <option value="all">All networks</option>
-              {networks.map((n) => (
-                <option key={n} value={n}>
-                  {n}
+              {networks.map(([id, name]) => (
+                <option key={id} value={id}>
+                  {name}
                 </option>
               ))}
             </select>

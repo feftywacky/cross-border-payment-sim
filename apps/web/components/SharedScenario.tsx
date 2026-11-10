@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, exportUrl } from "@/lib/api";
 import { when } from "@/lib/format";
+import { requestToQuery } from "@/lib/query";
 import { CostPanel, ResearchCard, ResearchCharts } from "./Research";
 import { Finding, RouteTable, StatusLine, Verdict } from "./Results";
 import { RouteDetail } from "./RouteDetail";
@@ -39,7 +40,8 @@ export function SharedScenario({ id }: { id: string }) {
   const c = s.comparison;
   const r = c.request;
   const open = c.routes.find((x) => x.id === openId);
-  const q = new URLSearchParams({ from: r.source_country, to: r.destination_country, amount: r.send_amount });
+  // Same inputs and assumptions, minus the pinned start time (the point is to re-price now).
+  const q = requestToQuery({ ...r, start_time: null });
   return (
     <Canvas>
       <PageHeader

@@ -390,7 +390,7 @@ function Heatmap({ data, currency }: { data: SensitivityResponse; currency: stri
             {hovered.time_advantage_minutes == null ? "unknown" : minutes(Math.abs(hovered.time_advantage_minutes)) + (hovered.time_advantage_minutes >= 0 ? " faster" : " slower")}.
           </>
         ) : (
-          "Cell figures are USDC's cost advantage in percentage points (positive means USDC is cheaper). Hover or focus a cell for details."
+          "Each cell compares USDC routes with the best conventional route. “Cheaper and faster” means a single USDC route wins on both. Figures are that route's cost advantage in percentage points (positive means USDC is cheaper). Hover or focus a cell for details."
         )}
       </figcaption>
     </figure>
