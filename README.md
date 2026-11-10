@@ -9,6 +9,16 @@ or creates accounts. Every result is a **simulation / estimate, not a payment qu
 
 Spec: [Stablecoin_Cross_Border_Simulator_Spec.md](Stablecoin_Cross_Border_Simulator_Spec.md).
 
+## Status (2026-11-10)
+
+```mermaid
+flowchart LR
+  A["Slice A<br/>engine + data ✅"] --> B["Slice B<br/>comparison UI ✅"] --> C["Slice C<br/>sweeps, share, export ✅"] --> D["Remaining<br/>tariff review ⏳ · Wise creds ⏳ · holidays ⏳"]
+```
+
+63 API tests pass offline; Playwright happy-path on fixtures. Spec §9 slices are implemented; the spec's
+"Base and Ethereum" initial networks have since grown to 13.
+
 ## What's covered
 
 | | |
@@ -76,6 +86,7 @@ docs                architecture, sources & credentials, tariff review
 - [Architecture](docs/architecture.md)
 - [Sources & credentials setup](docs/sources-and-credentials.md)
 - [Tariff review procedure](docs/tariff-review.md)
+- [Spec](Stablecoin_Cross_Border_Simulator_Spec.md) (original brief; README/architecture reflect current state)
 - Methodology and known data gaps: the in-app **Methodology** page (`/methodology`); OpenAPI at `http://localhost:8000/docs`.
 
 ## Important limitations

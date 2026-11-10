@@ -1,6 +1,6 @@
 # Stablecoin Cross-Border Payment Simulator — Engineering Specification
 
-**Version:** 1.0 · **Date:** 2026-09-26 · **Status:** Implementation brief
+**Version:** 1.0 · **Date:** 2026-09-26 · **Status:** Original brief — implemented (see README status); networks since expanded beyond Base/Ethereum
 
 ## 1. Purpose and scope
 

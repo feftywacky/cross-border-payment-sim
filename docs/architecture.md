@@ -18,6 +18,19 @@ flowchart LR
   A --> DB[(PostgreSQL / SQLite<br/>snapshots · observations · quote runs · scenarios)]
 ```
 
+## API (`/api/v1`)
+
+```mermaid
+flowchart LR
+  H["GET /health · /ready"] ~~~ K["GET /catalog · /sources/status"]
+  K ~~~ Cmp["POST /comparisons<br/>GET /comparisons/{id}"]
+  Cmp ~~~ Sw["POST /analyses/sensitivity"]
+  Sw ~~~ Sc["POST /scenarios<br/>GET /scenarios/{id}<br/>…/replay · …/export"]
+```
+
+All `POST`s are rate-limited per client IP (`RATE_LIMIT_PER_MINUTE`, default 60 → `429`). `X-Forwarded-For` is
+honoured only from `TRUSTED_PROXIES`. Market-assumption overrides and sweep grids are bounded (`422` when out of range).
+
 ## Request flow
 
 1. `POST /api/v1/comparisons` validates inputs against the catalog (country ↔ currency, rails per country, limits).

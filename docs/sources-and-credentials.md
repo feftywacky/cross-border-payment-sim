@@ -21,6 +21,17 @@ only whether credentials are configured (a boolean), never their values.
 Public endpoints have rate limits. Books are cached for 15 s and market lists for 1 h. Respect each provider's
 terms of use before deploying publicly.
 
+## Environment (see `.env.example`)
+
+| Var | Default | Purpose |
+|---|---|---|
+| `DATA_MODE` | `live` | `live` · `fixture` · `record` |
+| `DATABASE_URL` | SQLite | PostgreSQL in Docker |
+| `CORS_ORIGINS` | `localhost:3000` | allowed origins |
+| `RATE_LIMIT_PER_MINUTE` | 60 | per-client POST limit |
+| `TRUSTED_PROXIES` | `127.0.0.1,::1` | peers allowed to set `X-Forwarded-For` |
+| `API_ORIGIN` | `127.0.0.1:8000` | web → API proxy target |
+
 ## Fixtures
 
 `DATA_MODE=record python -m scripts.record_fixtures` (from `services/api`) captures every upstream payload into
