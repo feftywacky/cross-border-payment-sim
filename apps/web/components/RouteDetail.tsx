@@ -110,6 +110,8 @@ export function RouteDetail({ r, sourceCurrency }: { r: RouteResult; sourceCurre
         {r.estimated_arrival && <p className="mt-3 text-[13px] text-muted">Typical arrival in the recipient&apos;s bank: <span className="text-text">{when(r.estimated_arrival)}</span></p>}
       </div>
 
+      <TimeSplit r={r} />
+
       <section>
         <h3 className="mb-4 text-sm font-semibold">Timeline · sender funding → recipient bank</h3>
         <ol className="relative">
@@ -132,13 +134,17 @@ export function RouteDetail({ r, sourceCurrency }: { r: RouteResult; sourceCurre
               </div>
               {leg.duration.note && <p className="mt-0.5 text-xs text-muted">{leg.duration.note}</p>}
               {(leg.assumptions?.length ?? 0) > 0 && (
-                <ul className="mt-1 space-y-0.5 text-xs text-muted">
-                  {leg.assumptions!.map((a) => (
-                    <li key={a}>
-                      <span className="font-medium text-warn">Assumption</span> {a}
-                    </li>
-                  ))}
-                </ul>
+                <details className="group mt-1 text-xs">
+                  <summary className={`${sub} w-fit`}>
+                    <Chevron className="transition group-open:rotate-90" />
+                    <span className="text-warn">{leg.assumptions!.length} {leg.assumptions!.length === 1 ? "assumption" : "assumptions"}</span>
+                  </summary>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-8 text-muted">
+                    {leg.assumptions!.map((a) => (
+                      <li key={a}>{a}</li>
+                    ))}
+                  </ul>
+                </details>
               )}
               <Detail leg={leg} />
             </li>
@@ -211,5 +217,40 @@ function Stat({ label, value, sub, lead }: { label: string; value: string; sub?:
       <dd className={lead ? "mt-1 text-lg font-bold tabular" : "mt-1 text-base font-medium tabular"}>{value}</dd>
       {sub && <dd className="text-xs text-muted tabular">{sub}</dd>}
     </div>
+  );
+}
+
+/** Where the time goes: one tall segmented bar of typical leg durations, the legend naming each part. */
+function TimeSplit({ r }: { r: RouteResult }) {
+  const shade = (i: number, l: LegResult) =>
+    l.kind === "network" ? "var(--accent)" : ["var(--conv)", "var(--conv-2)"][i % 2];
+  const parts = (r.legs ?? [])
+    .filter((l) => l.duration.known && (l.duration.typical ?? 0) > 0)
+    .map((l, i) => ({ key: String(l.index), label: l.label.split(" · ")[0], m: l.duration.typical ?? 0, bg: shade(i, l) }));
+  const active = parts.reduce((t, p) => t + p.m, 0);
+  const total = r.duration.known ? (r.duration.typical ?? active) : active;
+  // Leg times are processing only; the rest of the typical end-to-end time is waiting on bank hours and cut-offs.
+  if (total - active >= 1) parts.push({ key: "wait", label: "Waiting for bank hours", m: total - active, bg: "var(--active)" });
+  if (parts.length < 2 || total <= 0) return null;
+  return (
+    <section>
+      <div className="mb-2 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold">Where the time goes</h3>
+        <span className="text-xs text-muted tabular">{minutes(total)} typical</span>
+      </div>
+      <div className="flex h-3 gap-0.5" role="img" aria-label={parts.map((p) => `${p.label}: ${minutes(p.m)}`).join("; ")}>
+        {parts.map((p) => (
+          <span key={p.key} title={`${p.label}: ${minutes(p.m)}`} className="min-w-[3px] rounded" style={{ width: `${(p.m / total) * 100}%`, background: p.bg }} />
+        ))}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+        {parts.map((p) => (
+          <li key={p.key} className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="h-2 w-2 rounded-sm" style={{ background: p.bg, boxShadow: p.key === "wait" ? "inset 0 0 0 1px var(--border-strong)" : undefined }} />
+            {p.label} <span className="font-medium text-text tabular">{minutes(p.m)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

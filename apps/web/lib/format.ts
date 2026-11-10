@@ -88,3 +88,9 @@ export const EXCLUSION_LABEL: Record<string, string> = {
 };
 
 export const ROUTE_TYPE_LABEL = { usdc: "USDC", conventional_provider: "Provider", bank_wire: "Bank wire" } as const;
+
+/** Regional-indicator flag emoji for an ISO country code ("DE" → 🇩🇪). */
+export function flag(code: string | null | undefined) {
+  if (!code || code.length !== 2) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}
