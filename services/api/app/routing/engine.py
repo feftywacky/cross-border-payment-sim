@@ -19,7 +19,7 @@ from app.money import BPS, HUNDRED, ONE, ZERO, D, floor_unit, s
 from app.pricing.orderbook import Book, ExecutionError, execute
 from app.pricing.timing import TimedLeg, simulate
 from app.provenance import Snapshot
-from app.schemas import ComparisonRequest, Duration, FeeItem, LegResult, Overrides, RouteResult
+from app.schemas import ComparisonRequest, Duration, FeeItem, LegResult, Overrides, RouteResult, TimingSplit
 
 INSTANT = Timing(0, 1, 5, note="Taker order fills immediately")
 
@@ -166,7 +166,7 @@ class RouteBuilder:
             source_ids=list(source_ids), source_status=status, observed_at=observed_at,
             assumptions=list(assumptions), detail=detail or {},
         ))
-        self.timed.append(TimedLeg(timing, calendar, float(extra_hours)))
+        self.timed.append(TimedLeg(timing, calendar, float(extra_hours), phase=_phase(kind)))
         self.amount, self.unit = out, out_unit
 
     def rail_leg(self, kind: str, provider: Venue, terms: RailTerms, direction: str, extra_hours: Decimal) -> None:
@@ -277,7 +277,7 @@ class RouteBuilder:
             spread_bps=s(spread, 2),
             duration=Duration(min=sim["min"], typical=sim["typical"], max=sim["max"], known=sim["known"],
                               note=None if sim["known"] else "At least one material leg has unknown duration"),
-            estimated_arrival=sim["arrival"], fee_breakdown=self.fees, legs=self.legs, input_quality=quality,
+            timing_split=_split(sim), estimated_arrival=sim["arrival"], fee_breakdown=self.fees, legs=self.legs, input_quality=quality,
             recommendation_grade="current" if current else "research", source_ids=self.source_ids + ctx.R_ids,
             prerequisites=self.prerequisites, risks=self.risks, **self.meta,
         )
@@ -287,6 +287,25 @@ def _dp(unit: str) -> int:
     from app.money import dp
 
     return dp(unit)
+
+
+_RAIL_KINDS = {"funding", "hold", "payout"}
+
+
+def _phase(kind: str) -> str:
+    return "rails" if kind in _RAIL_KINDS else "conversion"
+
+
+def _split(sim: dict) -> TimingSplit | None:
+    ph = sim.get("phases", {})
+
+    def dur(name: str) -> Duration:
+        d = ph.get(name) or {"min": 0, "typical": 0, "max": 0}
+        known = sim["known"] and None not in (d.get("min"), d.get("typical"), d.get("max"))
+        return Duration(min=d.get("min", 0) if known else None, typical=d.get("typical", 0) if known else None,
+                        max=d.get("max", 0) if known else None, known=known)
+
+    return TimingSplit(rails=dur("rails"), conversion=dur("conversion"))
 
 
 def _timing_note(t: Timing, cal: Calendar | None, extra: Decimal) -> str | None:

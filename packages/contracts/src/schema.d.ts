@@ -305,6 +305,13 @@ export interface components {
              * @description When the sender starts funding (defaults to now)
              */
             start_time?: string | null;
+            /**
+             * Time Basis
+             * @description Which time FASTEST / WITHIN_DEADLINE use: whole transfer, or only the conversion (trade, withdrawal, on-chain, exchange credit; excludes fiat pay-in, holds and payout)
+             * @default END_TO_END
+             * @enum {string}
+             */
+            time_basis: "END_TO_END" | "CONVERSION";
         };
         /** ComparisonResponse */
         ComparisonResponse: {
@@ -759,6 +766,7 @@ export interface components {
             source_venue?: string | null;
             /** Spread Bps */
             spread_bps?: string | null;
+            timing_split?: components["schemas"]["TimingSplit"] | null;
             /** Total Cost Source */
             total_cost_source?: string | null;
             /**
@@ -954,6 +962,16 @@ export interface components {
             source_url: string | null;
             /** Unit */
             unit: string;
+        };
+        /**
+         * TimingSplit
+         * @description End-to-end time split into the part spent moving fiat through banks and the conversion itself.
+         */
+        TimingSplit: {
+            /** @description Trade, exchange withdrawal queue, on-chain transfer, exchange credit and FX conversion */
+            conversion: components["schemas"]["Duration"];
+            /** @description Fiat pay-in, withdrawal holds and fiat payout (bank rails, business hours) */
+            rails: components["schemas"]["Duration"];
         };
         /** ValidationError */
         ValidationError: {

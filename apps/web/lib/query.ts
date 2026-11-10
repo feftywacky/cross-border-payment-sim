@@ -13,6 +13,7 @@ export const DEFAULT_OVERRIDES: Overrides = {
 };
 
 const OVERRIDE_KEYS = Object.keys(DEFAULT_OVERRIDES) as (keyof Overrides)[];
+const BASES = ["END_TO_END", "CONVERSION"] as const;
 const OBJECTIVES = ["MOST_RECEIVED", "FASTEST", "WITHIN_DEADLINE"] as const;
 
 /** Every input that shapes a comparison, as URL parameters. Defaults are omitted to keep links short. */
@@ -21,6 +22,7 @@ export function requestToQuery(req: ComparisonRequest): URLSearchParams {
   if (req.objective && req.objective !== "MOST_RECEIVED") p.set("objective", req.objective);
   if (req.funding_method && req.funding_method !== "any_bank") p.set("funding", req.funding_method);
   if (req.payout_method && req.payout_method !== "any_bank") p.set("payout", req.payout_method);
+  if (req.time_basis && req.time_basis !== "END_TO_END") p.set("basis", req.time_basis);
   if (req.deadline_minutes) p.set("deadline", String(req.deadline_minutes));
   if (req.start_time) p.set("start", req.start_time);
   const ov = req.overrides ?? DEFAULT_OVERRIDES;
@@ -40,6 +42,7 @@ export function queryToRequest(catalog: Catalog, q: URLSearchParams): Comparison
   const ccy = catalog.currencies.find((c) => c.code === src.currency);
   const rail = (country: typeof src, id: string | null) => (id && country.rails.some((r) => r.id === id) ? id : "any_bank");
   const objective = OBJECTIVES.find((o) => o === q.get("objective")) ?? "MOST_RECEIVED";
+  const time_basis = BASES.find((b) => b === q.get("basis")) ?? "END_TO_END";
   const deadline = Number(q.get("deadline"));
   const start = q.get("start");
   const overrides = { ...DEFAULT_OVERRIDES };
@@ -56,6 +59,7 @@ export function queryToRequest(catalog: Catalog, q: URLSearchParams): Comparison
     funding_method: rail(src, q.get("funding")),
     payout_method: rail(dst, q.get("payout")),
     objective,
+    time_basis,
     deadline_minutes: Number.isFinite(deadline) && deadline > 0 ? Math.round(deadline) : objective === "WITHIN_DEADLINE" ? 24 * 60 : null,
     mode: "current",
     start_time: start && !Number.isNaN(Date.parse(start)) ? new Date(start).toISOString() : null,

@@ -1,5 +1,5 @@
-import { SourcesView } from "@/components/SourcesView";
+import { SourcesBoard } from "@/components/SourcesBoard";
 
 export default function Page() {
-  return <SourcesView />;
+  return <SourcesBoard />;
 }

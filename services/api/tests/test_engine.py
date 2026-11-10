@@ -60,10 +60,12 @@ def test_two_account_requirement_and_hold(synthetic_snapshot):
     r = by_id(resp, "usdc:kraken:interac_etransfer:solana:bitstamp:sepa")
     assert any("separate verified" in p for p in r.prerequisites)
     assert any("own name" in p for p in r.prerequisites)
-    holds = [leg for leg in r.legs if leg.kind == "hold"]
-    assert holds and holds[0].duration.max == 4320
-    wire = by_id(resp, "usdc:kraken:ca_wire:solana:bitstamp:sepa")
-    assert r.duration.max > wire.duration.max - 60 * 24 * 3  # hold widens the max
+    # Kraken documents no withdrawal hold for Interac e-Transfer deposits.
+    assert not [leg for leg in r.legs if leg.kind == "hold"]
+    from app.catalog.seed import KRAKEN
+
+    ach = next(t for t in KRAKEN.fiat["USD"].deposit if t.rail == "ach")
+    assert ach.crypto_withdrawal_hold.typical == 10080  # Kraken: 7-day hold on Plaid ACH deposits
 
 
 def test_fixed_fee_dominance_small_amount(synthetic_snapshot):
@@ -143,3 +145,16 @@ def test_deterministic(synthetic_snapshot):
     b = compare(req(), synthetic_snapshot(), now=NOW)
     assert [(r.id, r.recipient_amount, r.duration.typical) for r in a.routes] == \
            [(r.id, r.recipient_amount, r.duration.typical) for r in b.routes]
+
+
+def test_time_basis_changes_fastest_ranking(synthetic_snapshot):
+    from app.routing.rank import sort_fastest, time_of
+
+    resp = compare(req(), synthetic_snapshot(), now=NOW)
+    ok = [r for r in resp.routes if r.eligible]
+    e2e = sort_fastest(ok, "END_TO_END")[0]
+    conv = sort_fastest(ok, "CONVERSION")[0]
+    assert time_of(conv, "CONVERSION").typical <= time_of(e2e, "CONVERSION").typical
+    assert time_of(e2e, "END_TO_END").typical <= time_of(conv, "END_TO_END").typical
+    by_conv = compare(req(objective="FASTEST", time_basis="CONVERSION"), synthetic_snapshot(), now=NOW)
+    assert by_conv.recommended_route_id == conv.id

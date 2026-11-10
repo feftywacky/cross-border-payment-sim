@@ -34,3 +34,14 @@ def test_scenario_delay_added():
     t0 = datetime(2026, 9, 29, 10, tzinfo=UTC)
     r = simulate(t0, [TimedLeg(Timing(10, 10, 10), None, extra_hours=2)])
     assert r["typical"] == 130
+
+
+def test_phase_split_sums_to_total_and_attributes_weekend_wait_to_rails():
+    fri = datetime(2026, 10, 2, 17, 30, tzinfo=UTC)  # after EU close -> payout waits until Monday
+    legs = [TimedLeg(Timing(5, 30, 60), None, phase="conversion"),
+            TimedLeg(Timing(10, 10, 10), EU, phase="rails")]
+    r = simulate(fri, legs)
+    ph = r["phases"]
+    assert ph["conversion"]["typical"] == 30
+    assert ph["rails"]["typical"] + ph["conversion"]["typical"] == r["typical"]
+    assert ph["rails"]["typical"] > 24 * 60  # weekend wait lands on the bank leg, not the crypto leg

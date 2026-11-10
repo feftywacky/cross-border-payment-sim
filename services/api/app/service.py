@@ -61,7 +61,7 @@ def compare(req: ComparisonRequest, snap: Snapshot, *, replay: bool = False,
         req = req.model_copy(update={"start_time": snap.created_at})
     ctx = build_context(req, snap, CATALOG, check_freshness=check, now=now)
     ok, bad = price_all(ctx)
-    rec, most, fast, reason = select(ok, req.objective, req.deadline_minutes)
+    rec, most, fast, reason = select(ok, req.objective, req.deadline_minutes, req.time_basis)
 
     warnings = []
     if snap.data_mode == "fixture":
@@ -97,7 +97,7 @@ def compare(req: ComparisonRequest, snap: Snapshot, *, replay: bool = False,
         excluded=bad, recommended_route_id=rec.id if rec else None, recommendation_reason=reason,
         recommendation_grade=rec.recommendation_grade if rec else None,
         most_received_route_id=most.id if most else None, fastest_route_id=fast.id if fast else None,
-        pareto_route_ids=pareto(ok), is_simulation_override=not req.overrides.is_default(),
+        pareto_route_ids=pareto(ok, req.time_basis), is_simulation_override=not req.overrides.is_default(),
         source_errors=snap.errors, warnings=warnings, disclaimer=DISCLAIMER,
     )
 

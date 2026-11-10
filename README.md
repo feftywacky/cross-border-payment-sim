@@ -68,7 +68,7 @@ cd apps/web && npx playwright test                   # end-to-end happy path on 
 ## Repository
 
 ```
-apps/web            Next.js (App Router) + Tailwind + Recharts UI
+apps/web            Next.js (App Router) + Tailwind; hand-built SVG charts (route map, frontier, sweep, heatmap)
 services/api        FastAPI, Pydantic, httpx, SQLAlchemy; Decimal pricing engine
   app/adapters      ecb/boc (fx.py), exchanges.py, network.py, wise.py, http.py (cache, breaker, record/replay)
   app/catalog       versioned tariffs, rails, venues, networks, capabilities (seed.py)

@@ -94,3 +94,40 @@ export function flag(code: string | null | undefined) {
   if (!code || code.length !== 2) return "";
   return String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
 }
+
+/** Compact amount for axes and chips: 1.2K, 280K, 1.5M. */
+export function compact(n: number | string, max = 1) {
+  return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: max }).format(Number(n));
+}
+
+/** Plain number with fixed decimals and grouping, no unit. */
+export function num(v: string | number | null | undefined, dp = 2, sign = false) {
+  if (v == null || v === "") return "—";
+  return new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: dp,
+    maximumFractionDigits: dp,
+    signDisplay: sign ? "exceptZero" : "auto",
+  }).format(Number(v));
+}
+
+/** Short duration for dense cells: 45m, 1h10, 24h48, 2.1d. */
+export function dur(m: number | null | undefined): string {
+  if (m == null) return "—";
+  if (m < 1) return "<1m";
+  if (m < 60) return `${m}m`;
+  if (m < 60 * 48) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return mm ? `${h}h${String(mm).padStart(2, "0")}` : `${h}h`;
+  }
+  return `${(m / 1440).toFixed(1)}d`;
+}
+
+/** Ticker-style symbols for chains and venues (neutral monograms; identity is the text). */
+export const CHAIN_SYMBOL: Record<string, string> = {
+  ethereum: "ETH", base: "BASE", arbitrum: "ARB", optimism: "OP", polygon: "POL", avalanche: "AVAX", linea: "LINEA",
+  solana: "SOL", stellar: "XLM", algorand: "ALGO", sui: "SUI", aptos: "APT", noble: "NOBLE", tron: "TRX", bsc: "BSC",
+};
+export const VENUE_SYMBOL: Record<string, string> = { kraken: "KR", coinbase: "CB", bitstamp: "BS", binance: "BN", okx: "OKX", bybit: "BY", wise: "W" };
+export const chainSym = (id: string | null | undefined) => (id ? (CHAIN_SYMBOL[id] ?? id.slice(0, 4).toUpperCase()) : "—");
+export const venueSym = (id: string | null | undefined) => (id ? (VENUE_SYMBOL[id] ?? id.slice(0, 2).toUpperCase()) : "—");

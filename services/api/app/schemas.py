@@ -12,6 +12,7 @@ SourceStatus = Literal[
     "live_api", "provider_estimate", "published_tariff", "historical", "user_assumption", "unavailable"
 ]
 Objective = Literal["MOST_RECEIVED", "FASTEST", "WITHIN_DEADLINE"]
+TimeBasis = Literal["END_TO_END", "CONVERSION"]
 RouteType = Literal["conventional_provider", "bank_wire", "usdc"]
 InputQuality = Literal["live", "mixed", "assumed"]
 RecommendationGrade = Literal["current", "research"]
@@ -76,6 +77,14 @@ class Duration(BaseModel):
     note: str | None = None
 
 
+class TimingSplit(BaseModel):
+    """End-to-end time split into the part spent moving fiat through banks and the conversion itself."""
+
+    rails: Duration = Field(description="Fiat pay-in, withdrawal holds and fiat payout (bank rails, business hours)")
+    conversion: Duration = Field(
+        description="Trade, exchange withdrawal queue, on-chain transfer, exchange credit and FX conversion")
+
+
 class FeeItem(BaseModel):
     category: FeeCategory
     label: str
@@ -127,6 +136,7 @@ class RouteResult(BaseModel):
     effective_rate: str | None = None
     spread_bps: str | None = None
     duration: Duration
+    timing_split: TimingSplit | None = None
     estimated_arrival: datetime | None = None
     fee_breakdown: list[FeeItem] = []
     legs: list[LegResult] = []
@@ -216,6 +226,9 @@ class ComparisonRequest(BaseModel):
     payout_method: str = "any_bank"
     objective: Objective = "MOST_RECEIVED"
     deadline_minutes: int | None = Field(None, ge=1, le=60 * 24 * 30)
+    time_basis: TimeBasis = Field(
+        "END_TO_END", description="Which time FASTEST / WITHIN_DEADLINE use: whole transfer, or only the conversion "
+        "(trade, withdrawal, on-chain, exchange credit; excludes fiat pay-in, holds and payout)")
     mode: Literal["current"] = "current"
     start_time: datetime | None = Field(None, description="When the sender starts funding (defaults to now)")
     overrides: Overrides = Field(default_factory=Overrides)

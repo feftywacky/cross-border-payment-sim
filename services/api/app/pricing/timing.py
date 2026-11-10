@@ -18,6 +18,9 @@ class TimedLeg:
     calendar: Calendar | None
     extra_hours: float = 0.0  # scenario delay (always elapsed wall-clock)
     material: bool = True
+    # "rails": fiat on/off-ramps and withdrawal holds (money moving through banks). "conversion": everything
+    # else (trade, exchange withdrawal queue, on-chain transfer, exchange credit, FX conversion).
+    phase: str = "conversion"
 
 
 def next_open(t: datetime, cal: Calendar) -> datetime:
@@ -83,24 +86,37 @@ def advance(t: datetime, leg: TimedLeg, which: str) -> datetime | None:
 
 
 def simulate(start: datetime, legs: list[TimedLeg]) -> dict:
-    """Return {'min','typical','max'} minutes (None if any material leg unknown) and typical arrival."""
+    """Return {'min','typical','max'} minutes (None if any material leg unknown), the typical arrival, and a
+    per-phase split `phases[phase] = {'min','typical','max'}`. Waiting caused by a leg's calendar (e.g. a weekend
+    before a bank payout) is attributed to that leg's phase."""
     out: dict = {}
     arrival = None
+    phases: dict[str, dict[str, int | None]] = {}
     for which in ("min", "typical", "max"):
         t: datetime | None = start
+        spent: dict[str, float] = {}
         for leg in legs:
             nt = advance(t, leg, which) if t is not None else None
             if nt is None and leg.material:
                 t = None
                 break
+            if nt is not None and t is not None:
+                spent[leg.phase] = spent.get(leg.phase, 0.0) + (nt - t).total_seconds() / 60
             t = nt if nt is not None else t
         out[which] = None if t is None else int((t - start).total_seconds() // 60)
+        for ph in {leg.phase for leg in legs}:
+            phases.setdefault(ph, {})[which] = None if t is None else int(spent.get(ph, 0.0))
         if which == "typical":
             arrival = t
     # Guard monotonicity (a later start window can reorder scenarios only through calendar effects).
     vals = [v for v in out.values() if v is not None]
     if len(vals) == 3:
         out["min"], out["max"] = min(vals), max(vals)
+    for d in phases.values():
+        pv = [v for v in d.values() if v is not None]
+        if len(pv) == 3:
+            d["min"], d["max"] = min(pv), max(pv)
     out["known"] = len(vals) == 3
     out["arrival"] = arrival
+    out["phases"] = phases
     return out

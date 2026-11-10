@@ -28,7 +28,7 @@ from app.catalog.models import (
     WiseTerms,
 )
 
-CATALOG_VERSION = "2026-09-27.seed-1"
+CATALOG_VERSION = "2026-11-10.seed-2"
 SEED_DATE = "2026-09-27"
 
 # ----------------------------------------------------------------------------------------- basics
@@ -215,7 +215,7 @@ KRAKEN = Venue(
     fiat={
         "CAD": FiatSupport("CAD", "book",
                            deposit=(rt("interac_etransfer", fee("CAD", url=K_FUND, max_amount="10000", tid="k-interac-in"),
-                                       mins(5, 30, 240), hold=mins(0, 0, 4320, note="Possible hold on new funding (up to 72 h)")),
+                                       mins(1, 30, 1440, note="Kraken: 0-1 business days or instant"), hold=None),
                                     rt("ca_wire", fee("CAD", url=K_FUND, min_amount="100", tid="k-cawire-in"),
                                        bd(0, 1, 2, "ca_bank"))),
                            withdraw=(rt("interac_etransfer", fee("CAD", "10", url=K_WD, max_amount="10000",
@@ -223,18 +223,20 @@ KRAKEN = Venue(
                                      rt("eft", fee("CAD", "1", url=K_WD, tid="k-eft-out"), bd(1, 2, 3, "ca_bank")))),
         "USD": FiatSupport("USD", "book",
                            deposit=(rt("ach", fee("USD", url=K_FUND, tid="k-ach-in"), bd(1, 1, 3, "us_bank"),
-                                       hold=mins(0, 4320, 10080, note="ACH funds may be withdrawal-locked for days")),
+                                       hold=mins(4320, 10080, 10080, note="Kraken lists a 7-day withdrawal hold on Plaid ACH deposits (72 h general hold)")),
                                     rt("fedwire", fee("USD", url=K_FUND, tid="k-fedwire-in"), bd(0, 0, 1, "us_bank"))),
                            withdraw=(rt("ach", fee("USD", url=K_WD, tid="k-ach-out"), bd(1, 2, 3, "us_bank")),
                                      rt("fedwire", fee("USD", "4", url=K_WD, tid="k-fedwire-out"),
                                         bd(0, 0, 1, "us_bank")))),
         "EUR": FiatSupport("EUR", "book",
-                           deposit=(SEPA_IN(K_FUND), SEPA_INST_IN(K_FUND)),
+                           deposit=(rt("sepa", fee("EUR", url=K_FUND, tid="sepa-in"), bd(0, 1, 3, "eu_bank", "Kraken: up to 3 business days")),
+                                    SEPA_INST_IN(K_FUND)),
                            withdraw=(rt("sepa", fee("EUR", "0.09", url=K_WD, tid="k-sepa-out"), bd(0, 1, 2, "eu_bank")),
                                      rt("sepa_instant", fee("EUR", "0.09", url=K_WD, tid="k-sepainst-out"),
                                         mins(1, 30, 240), status="assumed"))),
         "GBP": FiatSupport("GBP", "book",
-                           deposit=(rt("faster_payments", fee("GBP", url=K_FUND, tid="k-fps-in"), mins(5, 30, 240)),),
+                           deposit=(rt("faster_payments", fee("GBP", url=K_FUND, tid="k-fps-in"),
+                                       mins(5, 30, 1440, note="Kraken: 0-1 business days; first deposit 1-3 business days")),),
                            withdraw=(rt("faster_payments", fee("GBP", url=K_WD, tid="k-fps-out"), mins(10, 60, 1440)),)),
     },
     networks={

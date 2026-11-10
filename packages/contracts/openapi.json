@@ -314,6 +314,16 @@
       ],
       "description": "When the sender starts funding (defaults to now)",
       "title": "Start Time"
+     },
+     "time_basis": {
+      "default": "END_TO_END",
+      "description": "Which time FASTEST / WITHIN_DEADLINE use: whole transfer, or only the conversion (trade, withdrawal, on-chain, exchange credit; excludes fiat pay-in, holds and payout)",
+      "enum": [
+       "END_TO_END",
+       "CONVERSION"
+      ],
+      "title": "Time Basis",
+      "type": "string"
      }
     },
     "required": [
@@ -1576,6 +1586,16 @@
       ],
       "title": "Spread Bps"
      },
+     "timing_split": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/TimingSplit"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "total_cost_source": {
       "anyOf": [
        {
@@ -2234,6 +2254,25 @@
      "reviewed_at"
     ],
     "title": "TariffOut",
+    "type": "object"
+   },
+   "TimingSplit": {
+    "description": "End-to-end time split into the part spent moving fiat through banks and the conversion itself.",
+    "properties": {
+     "conversion": {
+      "$ref": "#/components/schemas/Duration",
+      "description": "Trade, exchange withdrawal queue, on-chain transfer, exchange credit and FX conversion"
+     },
+     "rails": {
+      "$ref": "#/components/schemas/Duration",
+      "description": "Fiat pay-in, withdrawal holds and fiat payout (bank rails, business hours)"
+     }
+    },
+    "required": [
+     "rails",
+     "conversion"
+    ],
+    "title": "TimingSplit",
     "type": "object"
    },
    "ValidationError": {

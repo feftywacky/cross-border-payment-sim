@@ -1,100 +1,153 @@
 @import "tailwindcss";
 
-/* Achromatic ledger: the chrome is ink and grey; the one hue (--accent) marks USDC data only.
-   Ground is a blue-grey ledger tint; cards are white with a 1px edge and no shadow. */
+/* Terminal: dark-first, panels on a near-black ground, hairline rules, mono figures.
+   Colour has jobs, never decoration:
+     --usdc / --wise / --bank   route-family identity (validated categorical trio, both modes)
+     --up / --down              better / worse than a reference (always paired with a sign or arrow)
+     --warn                     assumptions and simulations (always paired with a label)
+   The ramp --seq-* is one-hue sequential magnitude (route-map edges); --div-* is the diverging pair
+   (heatmap: USDC cheaper ⟷ conventional cheaper, grey midpoint). */
+
 :root {
-  --bg: #f2f4f7;           /* page and sidebar ground */
-  --surface: #ffffff;      /* cards */
-  --surface-2: #f4f5f7;    /* inner wells, hover rows */
-  --active: #e6e8ec;       /* active nav pill, selected segment track */
-  --border: #e3e5e8;       /* card edges */
-  --rule: #eef0f2;         /* row rules inside tables */
-  --border-strong: #cfd3d8;/* inputs and outlined controls */
-  --text: #0a0a0a;
-  --muted: #565b62;        /* secondary text */
-  --faint: #6b6f75;        /* meta, axis ticks (still 4.5:1 on white and on the ground) */
-  --primary: #141414;      /* near-black primary button */
-  --primary-ink: #ffffff;
-  --accent: #1d5fbf;       /* USDC: the one data hue */
-  --accent-soft: #e6eefa;
-  --accent-ink: #123d7a;
-  --conv: #141414;         /* conventional routes are drawn in ink */
-  --conv-2: #8a8a8a;       /* the second conventional series (bank wire) */
-  --warn: #92400e;
-  --warn-soft: #fffbeb;
-  --warn-edge: #fde68a;
-  --ok: #247b50;
-  --ok-soft: #dcfae5;
-  --ok-ink: #04250e;
-  --danger: #c4242a;
-  --danger-soft: #ffedea;
-  --danger-ink: #831c1e;
-  --grid: #e9ebee;
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --hover: #eef0f3;
+  --line: #e4e7eb;
+  --line-2: #d2d6dc;
+  --text: #0b0d10;
+  --muted: #4f5761;
+  --faint: #6b727c;
+  --usdc: #2a78d6;
+  --usdc-soft: #e5effb;
+  --usdc-ink: #164f96;
+  --wise: #1baf7a;
+  --bank: #eb6834;
+  --up: #0f7a3d;
+  --up-soft: #e3f5ea;
+  --down: #c4242a;
+  --down-soft: #fdebeb;
+  --warn: #8a4b07;
+  --warn-soft: #fff6e0;
+  --warn-line: #f3d48a;
+  --grid: #eceef1;
+  --axis: #c9cdd3;
+  --seq-lo: #cde2fb;
+  --seq-hi: #1c5cab;
+  --div-pos-1: #b7d3f6;
+  --div-pos-2: #6da7ec;
+  --div-pos-3: #2a78d6;
+  --div-neg-1: #f6c7b5;
+  --div-neg-2: #ef9874;
+  --div-neg-3: #d9531f;
+  --div-mid: #eceae6;
+  --glow: rgb(42 120 214 / 0.14);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0a0a;
-    --surface: #131313;
-    --surface-2: #1b1b1b;
-    --active: #262626;
-    --border: #232323;
-    --rule: #1d1d1d;
-    --border-strong: #3d3d3d;
-    --text: #f5f5f5;
-    --muted: #b4b4b4;
-    --faint: #949494;
-    --primary: #f5f5f5;
-    --primary-ink: #0a0a0a;
-    --accent: #6a9ff0;
-    --accent-soft: #15233a;
-    --accent-ink: #a9c8f7;
-    --conv: #f0f0f0;
-    --conv-2: #8f8f8f;
-    --warn: #e5a93b;
-    --warn-soft: #2b2414;
-    --warn-edge: #4a3a17;
-    --ok: #3fc07a;
-    --ok-soft: #172a1d;
-    --ok-ink: #3fc07a;
-    --danger: #e5566f;
-    --danger-soft: #2c1a20;
-    --danger-ink: #f08a9b;
-    --grid: #262626;
+    --bg: #07080a;
+    --panel: #0e1013;
+    --panel-2: #14171b;
+    --hover: #1a1e23;
+    --line: #1d2126;
+    --line-2: #2b3138;
+    --text: #e9ecef;
+    --muted: #a3abb5;
+    --faint: #7f8893;
+    --usdc: #3987e5;
+    --usdc-soft: #0f1d31;
+    --usdc-ink: #8db9f2;
+    --wise: #199e70;
+    --bank: #d95926;
+    --up: #34c77b;
+    --up-soft: #0e2219;
+    --down: #ef6a7f;
+    --down-soft: #2a1318;
+    --warn: #e9b44c;
+    --warn-soft: #221a0b;
+    --warn-line: #4d3a14;
+    --grid: #191c21;
+    --axis: #2f353d;
+    --seq-lo: #1a2d47;
+    --seq-hi: #5598e7;
+    --div-pos-1: #1b3556;
+    --div-pos-2: #2563b0;
+    --div-pos-3: #4f95ea;
+    --div-neg-1: #4a2416;
+    --div-neg-2: #9a3f1b;
+    --div-neg-3: #e2672f;
+    --div-mid: #23272d;
+    --glow: rgb(57 135 229 / 0.18);
     color-scheme: dark;
   }
 }
 
+:root[data-theme="dark"] {
+  --bg: #07080a;
+  --panel: #0e1013;
+  --panel-2: #14171b;
+  --hover: #1a1e23;
+  --line: #1d2126;
+  --line-2: #2b3138;
+  --text: #e9ecef;
+  --muted: #a3abb5;
+  --faint: #7f8893;
+  --usdc: #3987e5;
+  --usdc-soft: #0f1d31;
+  --usdc-ink: #8db9f2;
+  --wise: #199e70;
+  --bank: #d95926;
+  --up: #34c77b;
+  --up-soft: #0e2219;
+  --down: #ef6a7f;
+  --down-soft: #2a1318;
+  --warn: #e9b44c;
+  --warn-soft: #221a0b;
+  --warn-line: #4d3a14;
+  --grid: #191c21;
+  --axis: #2f353d;
+  --seq-lo: #1a2d47;
+  --seq-hi: #5598e7;
+  --div-pos-1: #1b3556;
+  --div-pos-2: #2563b0;
+  --div-pos-3: #4f95ea;
+  --div-neg-1: #4a2416;
+  --div-neg-2: #9a3f1b;
+  --div-neg-3: #e2672f;
+  --div-mid: #23272d;
+  --glow: rgb(57 135 229 / 0.18);
+  color-scheme: dark;
+}
+
 @theme inline {
   --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-active: var(--active);
-  --color-border: var(--border);
-  --color-rule: var(--rule);
-  --color-border-strong: var(--border-strong);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
-  --color-primary: var(--primary);
-  --color-primary-ink: var(--primary-ink);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-ink: var(--accent-ink);
-  --color-conv: var(--conv);
+  --color-usdc: var(--usdc);
+  --color-usdc-soft: var(--usdc-soft);
+  --color-usdc-ink: var(--usdc-ink);
+  --color-wise: var(--wise);
+  --color-bank: var(--bank);
+  --color-up: var(--up);
+  --color-up-soft: var(--up-soft);
+  --color-down: var(--down);
+  --color-down-soft: var(--down-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-  --color-warn-edge: var(--warn-edge);
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-ok-ink: var(--ok-ink);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
-  --color-danger-ink: var(--danger-ink);
+  --color-warn-line: var(--warn-line);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+html { background: var(--bg); }
 
 body {
   background: var(--bg);
@@ -104,28 +157,63 @@ body {
   line-height: 20px;
 }
 
-.tabular { font-variant-numeric: tabular-nums; }
+/* Figures: every number is mono + tabular so columns align and digits don't jitter on re-price. */
+.num { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+/* Terminal micro-label: small caps-like eyebrow used on panel headers and stat labels. */
+.eyebrow { font-family: var(--font-mono), ui-monospace, monospace; font-size: 10.5px; line-height: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
 
-::selection { background: var(--accent-soft); }
+:focus-visible { outline: 2px solid var(--usdc); outline-offset: 2px; border-radius: 4px; }
+::selection { background: var(--usdc-soft); }
 
-dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
 
-dialog[open] { animation: drawer-in 180ms cubic-bezier(0.22, 1, 0.36, 1); }
-@keyframes drawer-in { from { transform: translateX(24px); opacity: 0; } }
+dialog::backdrop { background: rgb(0 0 0 / 0.55); backdrop-filter: blur(2px); }
+dialog[open] { animation: drawer-in 200ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes drawer-in { from { transform: translateX(32px); opacity: 0; } }
 
-details > summary { list-style: none; }
+details > summary { list-style: none; cursor: pointer; }
 details > summary::-webkit-details-marker { display: none; }
 
-/* Heatmap mark for "USDC faster only": a 1px diagonal hatch in the data hue. */
-.hatch {
-  background-color: var(--surface);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M-1 1l2-2M0 6l6-6M5 7l2-2' stroke='%231d5fbf' stroke-width='1'/%3E%3C/svg%3E");
-  box-shadow: inset 0 0 0 1px var(--accent);
+/* Live pulse on status dots. */
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; } 70% { box-shadow: 0 0 0 5px transparent; opacity: 1; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.pulse { animation: pulse-ring 2.2s ease-out infinite; }
+
+/* Ticker tape: the track holds two copies of the items and slides by half its width. */
+@keyframes tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.tape { animation: tape 60s linear infinite; }
+.tape:hover { animation-play-state: paused; }
+
+/* Value flash when a figure re-prices. */
+@keyframes flash { from { background: var(--glow); } to { background: transparent; } }
+.flash { animation: flash 900ms ease-out; border-radius: 4px; }
+
+/* Shimmer for skeletons. */
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+.skeleton { background: linear-gradient(90deg, var(--panel-2) 25%, var(--hover) 50%, var(--panel-2) 75%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; border-radius: 6px; }
+
+/* Faint dotted grid behind the hero so the page reads as an instrument, not a form. */
+.grid-bg {
+  background-image: radial-gradient(var(--line-2) 1px, transparent 1px);
+  background-size: 18px 18px;
+  background-position: -9px -9px;
 }
 
+/* Hatch: "no data / unavailable" cells and assumed segments. */
+.hatch {
+  background-image: repeating-linear-gradient(135deg, var(--line-2) 0 1px, transparent 1px 6px);
+}
+
+/* Thin scrollbars inside panels. */
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+
 @media (prefers-reduced-motion: reduce) {
-  dialog[open] { animation: none; }
+  dialog[open], .pulse, .tape, .flash, .skeleton { animation: none !important; }
   * { transition-duration: 0ms !important; }
+}
+
+@media (forced-colors: active) {
+  .hatch { forced-color-adjust: none; }
 }

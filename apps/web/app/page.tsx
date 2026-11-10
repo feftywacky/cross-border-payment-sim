@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import { Simulator } from "@/components/Simulator";
-import { Spinner } from "@/components/ui";
+import { Simulator } from "@/components/sim/Simulator";
+import { Spinner } from "@/components/ui/kit";
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="p-8"><Spinner /></div>}>
+    <Suspense fallback={<div className="pt-8"><Spinner /></div>}>
       <Simulator />
     </Suspense>
   );
