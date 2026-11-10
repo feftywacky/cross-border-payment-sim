@@ -4,14 +4,14 @@ import type { Catalog, ComparisonRequest, ComparisonResponse, SensitivityRespons
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, exportUrl } from "@/lib/api";
-import { ago } from "@/lib/format";
+import { ago, flag } from "@/lib/format";
 import { queryToRequest, requestToQuery } from "@/lib/query";
 import { amountProblem, ComparisonForm } from "./ComparisonForm";
-import { AXIS_LABEL, CostPanel, ResearchCard, ResearchCharts } from "./Research";
-import { Finding, RouteTable, StatusLine, Verdict } from "./Results";
+import { AXIS_LABEL, Insights } from "./Research";
+import { Hero, RouteHops, RouteTable, StatusLine } from "./Results";
 import { RouteDetail } from "./RouteDetail";
 import { Canvas, PageHeader } from "./Shell";
-import { Button, Card, Drawer, Field, inputBase, RoutePath, Skeleton, Spinner } from "./ui";
+import { Button, Card, Drawer, Field, inputBase, Segmented, Skeleton, Spinner } from "./ui";
 
 type Axis = NonNullable<import("@sim/contracts").SensitivityRequest["heatmap_axis"]>;
 
@@ -135,18 +135,61 @@ export function Simulator() {
     );
   }
 
-  const corridorTitle = `${catalog.countries.find((c) => c.code === req.source_country)?.name ?? req.source_country} to ${
-    catalog.countries.find((c) => c.code === req.destination_country)?.name ?? req.destination_country
-  }`;
+  const country = (code: string) => catalog.countries.find((c) => c.code === code);
+  const corridorTitle = (
+    <span className="flex flex-wrap items-center gap-x-2.5">
+      <span>
+        <span aria-hidden className="mr-2">{flag(req.source_country)}</span>
+        {country(req.source_country)?.name ?? req.source_country}
+      </span>
+      <span aria-hidden className="text-faint">→</span>
+      <span>
+        <span aria-hidden className="mr-2">{flag(req.destination_country)}</span>
+        {country(req.destination_country)?.name ?? req.destination_country}
+      </span>
+    </span>
+  );
+
+  const ranking = (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted">Rank by</span>
+      <Segmented
+        label="Rank routes by"
+        value={req.objective ?? "MOST_RECEIVED"}
+        onChange={(objective) => setReq({ ...req, objective, deadline_minutes: objective === "WITHIN_DEADLINE" ? (req.deadline_minutes ?? 24 * 60) : req.deadline_minutes })}
+        options={[
+          { value: "MOST_RECEIVED", label: "Most received" },
+          { value: "FASTEST", label: "Fastest" },
+          { value: "WITHIN_DEADLINE", label: "Deadline" },
+        ]}
+      />
+      {req.objective === "WITHIN_DEADLINE" && (
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          within
+          <input
+            type="number"
+            min={1}
+            aria-label="Time limit in hours"
+            className={`${inputBase} w-16`}
+            value={req.deadline_minutes ? req.deadline_minutes / 60 : ""}
+            onChange={(e) => setReq({ ...req, deadline_minutes: e.target.value ? Math.max(1, Math.round(Number(e.target.value) * 60)) : null })}
+          />
+          h
+        </label>
+      )}
+    </div>
+  );
 
   return (
     <Canvas>
       <PageHeader
         title={corridorTitle}
-        sub={data ? <Finding data={data} /> : "Pricing every route from live order books, reference FX and network conditions…"}
         right={
           share ? null : (
             <Button onClick={save} disabled={!data || shareBusy || loading || sensLoading || sweepPending}>
+              <svg aria-hidden viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 10V2.5M5 5.5l3-3 3 3M3 9v3.5h10V9" />
+              </svg>
               {shareBusy ? "Saving…" : sensLoading || sweepPending ? "Preparing…" : "Save and share"}
             </Button>
           )
@@ -157,7 +200,7 @@ export function Simulator() {
       {share && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3">
           <p className="mr-auto text-[13px] text-muted">
-            <span className="font-medium text-text">Scenario saved.</span> This read-only link keeps the exact snapshot; prices never refresh.
+            <span className="font-medium text-text">Saved.</span> A read-only snapshot; prices never refresh.
           </p>
           <div className="flex w-full flex-wrap items-center sm:w-auto">
             <input readOnly className={`${inputBase} min-w-0 flex-1 rounded-r-none font-mono text-xs sm:w-80`} value={share.url} onFocus={(e) => e.target.select()} aria-label="Scenario link" />
@@ -180,86 +223,68 @@ export function Simulator() {
           {data && <span className="text-muted"> Showing the last good result from {ago(data.snapshot.created_at)}.</span>}
         </p>
       )}
-      {!data && !error && <VerdictSkeleton />}
+      {!data && !error && <HeroSkeleton />}
       {data && (
         <>
           <div className={loading ? "opacity-60 transition" : "transition"} aria-busy={loading}>
-            <Verdict
-              data={data}
-              onOpen={setOpenId}
-              chart={
-                <CostPanel
-                  data={sens}
-                  currency={req.source_currency}
-                  amount={data.request.send_amount}
-                  loading={sensLoading}
-                  error={sensError}
-                />
-              }
-            />
+            <Hero data={data} onOpen={setOpenId} controls={ranking} />
           </div>
-          <RouteTable data={data} onOpen={setOpenId} />
 
-          <ResearchCard right={sensLoading ? <Spinner label="Sweeping" /> : undefined}>
-            {sensError && <p className="mb-3 text-[13px] text-danger">Couldn&apos;t run the sweep: {sensError}</p>}
-            {sens ? (
-              <div className={sensLoading ? "opacity-60 transition" : "transition"}>
-                <ResearchCharts
-                  data={sens}
-                  currency={req.source_currency}
-                  controls={
-                    <div className="flex flex-wrap items-end gap-2">
-                      <Field label="Amounts from" htmlFor="rmin">
-                        <input id="rmin" className={`${inputBase} w-24`} placeholder="50" inputMode="decimal" value={range.min} onChange={(e) => setRange((r) => ({ ...r, min: e.target.value }))} />
-                      </Field>
-                      <Field label="to" htmlFor="rmax">
-                        <input id="rmax" className={`${inputBase} w-28`} placeholder="250000" inputMode="decimal" value={range.max} onChange={(e) => setRange((r) => ({ ...r, max: e.target.value }))} />
-                      </Field>
-                      <Field label="Stress axis" htmlFor="axis">
-                        <select id="axis" className={inputBase} value={axis} onChange={(e) => setAxis(e.target.value as Axis)}>
-                          {Object.entries(AXIS_LABEL).map(([k, v]) => (
-                            <option key={k} value={k}>{v}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Button variant="secondary" onClick={runSensitivity} disabled={sensLoading}>
-                        {sensLoading ? "Sweeping…" : "Re-run sweep"}
-                      </Button>
-                    </div>
-                  }
-                />
+          <Insights
+            data={sens}
+            currency={req.source_currency}
+            amount={data.request.send_amount}
+            loading={sensLoading}
+            error={sensError}
+            controls={
+              <div className="flex flex-wrap items-end gap-2">
+                <Field label="Amounts from" htmlFor="rmin">
+                  <input id="rmin" className={`${inputBase} w-24`} placeholder="50" inputMode="decimal" value={range.min} onChange={(e) => setRange((r) => ({ ...r, min: e.target.value }))} />
+                </Field>
+                <Field label="to" htmlFor="rmax">
+                  <input id="rmax" className={`${inputBase} w-28`} placeholder="250000" inputMode="decimal" value={range.max} onChange={(e) => setRange((r) => ({ ...r, max: e.target.value }))} />
+                </Field>
+                <Field label="Stress" htmlFor="axis">
+                  <select id="axis" className={inputBase} value={axis} onChange={(e) => setAxis(e.target.value as Axis)}>
+                    {Object.entries(AXIS_LABEL).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Button variant="secondary" onClick={runSensitivity} disabled={sensLoading}>
+                  {sensLoading ? "Sweeping…" : "Re-run"}
+                </Button>
               </div>
-            ) : (
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" aria-busy>
-                <Skeleton className="h-[300px]" />
-                <Skeleton className="h-[300px]" />
-              </div>
-            )}
-          </ResearchCard>
+            }
+          />
+
+          <RouteTable data={data} onOpen={setOpenId} />
         </>
       )}
 
-      <Drawer open={!!openRoute} onClose={() => setOpenId(null)} title={openRoute && <RoutePath label={openRoute.label} />}>
+      <Drawer open={!!openRoute} onClose={() => setOpenId(null)} title={openRoute && <RouteHops r={openRoute} />}>
         {openRoute && data && <RouteDetail r={openRoute} sourceCurrency={data.request.source_currency} />}
       </Drawer>
     </Canvas>
   );
 }
 
-function VerdictSkeleton() {
+function HeroSkeleton() {
   return (
     <Card aria-busy aria-label="Loading results">
-      <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)]">
+      <Skeleton className="m-5 h-6 w-80" />
+      <div className="grid grid-cols-1 border-t border-rule lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="space-y-3 p-5 lg:border-r lg:border-rule">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="mt-6 h-9 w-56" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-14 w-64" />
+          <Skeleton className="h-16 w-full" />
           <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-28 w-full" />
         </div>
-        <div className="space-y-3 p-5">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-[260px] w-full" />
+        <div className="space-y-4 p-5">
+          <Skeleton className="h-5 w-32" />
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-9 w-full" />
+          ))}
         </div>
       </div>
     </Card>

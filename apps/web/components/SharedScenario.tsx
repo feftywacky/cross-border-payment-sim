@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { api, exportUrl } from "@/lib/api";
 import { when } from "@/lib/format";
 import { requestToQuery } from "@/lib/query";
-import { CostPanel, ResearchCard, ResearchCharts } from "./Research";
-import { Finding, RouteTable, StatusLine, Verdict } from "./Results";
+import { Insights } from "./Research";
+import { Finding, Hero, RouteHops, RouteTable, StatusLine } from "./Results";
 import { RouteDetail } from "./RouteDetail";
 import { Canvas, PageHeader } from "./Shell";
-import { Drawer, RoutePath, Spinner } from "./ui";
+import { Drawer, Spinner } from "./ui";
 
 const linkBtn = "inline-flex h-9 items-center rounded-md px-3.5 text-sm font-medium transition active:scale-[0.98]";
 
@@ -61,18 +61,10 @@ export function SharedScenario({ id }: { id: string }) {
       <p className="text-[13px] text-muted">
         Saved {when(s.created_at)}. {s.replay_note} Model {c.model_version} · catalog {c.catalog_version}.
       </p>
-      <Verdict
-        data={c}
-        onOpen={setOpenId}
-        chart={<CostPanel data={s.sensitivity ?? null} currency={r.source_currency} amount={r.send_amount} loading={false} error={s.sensitivity ? null : "no sweep was saved with this scenario"} />}
-      />
+      <Hero data={c} onOpen={setOpenId} />
+      {s.sensitivity && <Insights data={s.sensitivity} currency={r.source_currency} amount={r.send_amount} loading={false} error={null} />}
       <RouteTable data={c} onOpen={setOpenId} />
-      {s.sensitivity && (
-        <ResearchCard>
-          <ResearchCharts data={s.sensitivity} currency={r.source_currency} />
-        </ResearchCard>
-      )}
-      <Drawer open={!!open} onClose={() => setOpenId(null)} title={open && <RoutePath label={open.label} />}>
+      <Drawer open={!!open} onClose={() => setOpenId(null)} title={open && <RouteHops r={open} />}>
         {open && <RouteDetail r={open} sourceCurrency={r.source_currency} />}
       </Drawer>
     </Canvas>
